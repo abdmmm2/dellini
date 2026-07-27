@@ -1,0 +1,32 @@
+# Render Blueprint — منصة دلني
+services:
+  - type: web
+    name: dellini
+    env: node
+    region: frankfurt
+    plan: starter
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: SITE_NAME
+        value: دلني
+      - key: SITE_URL
+        fromService:
+          type: web
+          name: dellini
+          property: url
+      - key: DB_PATH
+        value: /data/dellini.db
+      - key: UPLOADS_DIR
+        value: /data
+      - key: SEED
+        value: "true"
+    disks:
+      - name: dellini-data
+        mountPath: /data
+        sizeGB: 1
