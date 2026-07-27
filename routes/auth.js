@@ -91,6 +91,9 @@ router.post('/login', (req, res) => {
     return res.redirect('/login');
   }
 
+  // Update online status
+  db.runStmt('UPDATE users SET is_online = 1, last_active = CURRENT_TIMESTAMP WHERE id = ?', user.id);
+
   req.session.user = {
     id: user.id,
     name: user.name,
@@ -120,6 +123,10 @@ router.post('/login', (req, res) => {
 
 // Logout
 router.get('/logout', (req, res) => {
+  const db = getDB();
+  if (req.session.user) {
+    db.runStmt('UPDATE users SET is_online = 0 WHERE id = ?', req.session.user.id);
+  }
   req.session.destroy();
   res.redirect('/login');
 });

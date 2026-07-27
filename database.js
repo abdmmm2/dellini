@@ -278,6 +278,9 @@ async function initializeDatabase() {
   try { db._rawRun("ALTER TABLE consultant_categories ADD COLUMN voice_enabled INTEGER DEFAULT 0"); } catch(e) {}
   try { db._rawRun("ALTER TABLE consultant_categories ADD COLUMN voice_price_per_minute REAL DEFAULT 0"); } catch(e) {}
 
+  // Mark all verified consultants as online (checked every startup)
+  try { db._rawRun("UPDATE users SET is_online = 1, last_active = datetime('now') WHERE role = 'consultant' AND id IN (SELECT user_id FROM consultants WHERE is_verified = 1)"); } catch(e) {}
+
   // Bank transfers table
   db._rawRun(`
     CREATE TABLE IF NOT EXISTS bank_transfers (
