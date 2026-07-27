@@ -1,0 +1,101 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-patch-check"></i> لوحة التوثيق</h3>
+    <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-right"></i> رجوع</a>
+  </div>
+
+  <!-- Tier Cards -->
+  <div class="row g-3 mb-4">
+    <% tiers.forEach(t => { %>
+      <div class="col-md col-6">
+        <div class="card verification-card text-center p-3" style="border-color: <%= t.color %>">
+          <div class="small text-muted mb-1"><%= t.icon %></div>
+          <div class="tier-stars"><%= t.stars.toLocaleString() %></div>
+          <div class="small">★</div>
+          <div class="verify-badge verify-<%= t.id %> verification-badge-preview mx-auto">
+            <span class="badge-icon">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
+              </svg>
+            </span>
+            <span class="badge-check">✓</span>
+            <span><%= t.name_short %></span>
+          </div>
+          <div class="mt-2">
+            <span class="badge bg-<%= t.id === 'gold' ? 'warning text-dark' : t.id === 'platinum' ? 'info' : t.id === 'silver' ? 'secondary' : t.id === 'blue' ? 'primary' : 'dark' %>">
+              <%= tierStats[t.id] || 0 %> مستشار
+            </span>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+
+  <!-- Verified Consultants -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0"><i class="bi bi-person-badge"></i> المستشارون الموثّقون</h5>
+      <span class="badge bg-primary"><%= verified.length %> مستشار</span>
+    </div>
+    <div class="card-body p-0">
+      <% if (verified.length === 0) { %>
+        <div class="text-center py-5">
+          <i class="bi bi-patch-check" style="font-size: 3rem; color: #dee2e6;"></i>
+          <p class="text-muted mt-2">لا يوجد مستشارون موثّقون بعد</p>
+          <a href="/admin/consultants" class="btn btn-primary">توثيق مستشارين</a>
+        </div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>المستشار</th>
+                <th>مستوى التوثيق</th>
+                <th>الاستشارات</th>
+                <th>التقييم</th>
+                <th>الرصيد</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% verified.forEach((c, i) => { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td class="fw-bold">
+                    <%= c.user_name %>
+                    <%- include('../partials/verify-badge', { tier: c.verification_tier }) %>
+                  </td>
+                  <td>
+                    <% const tierInfo = tiers.find(t => t.id === c.verification_tier); %>
+                    <span class="badge bg-<%= c.verification_tier === 'gold' ? 'warning text-dark' : c.verification_tier === 'platinum' ? 'info' : c.verification_tier === 'silver' ? 'secondary' : c.verification_tier === 'blue' ? 'primary' : 'dark' %>">
+                      <%= tierInfo ? tierInfo.icon + ' ' + tierInfo.name : c.verification_tier %>
+                    </span>
+                  </td>
+                  <td><%= c.completed_count || 0 %></td>
+                  <td><%= c.rating %> ★</td>
+                  <td><%= c.balance %> ريال</td>
+                  <td>
+                    <a href="/admin/user/edit/<%= c.user_id %>" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-gear"></i> تعديل
+                    </a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="mt-4">
+    <a href="/admin/consultants" class="btn btn-primary">
+      <i class="bi bi-person-plus"></i> إدارة توثيق المستشارين
+    </a>
+    <a href="/admin/verification/public" class="btn btn-outline-primary" target="_blank">
+      <i class="bi bi-eye"></i> عرض الصفحة العامة للتوثيق
+    </a>
+  </div>
+</div>

@@ -1,0 +1,89 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-speedometer2"></i> لوحة العميل</h3>
+    <a href="/client/new" class="btn btn-primary"><i class="bi bi-plus-circle"></i> استشارة جديدة</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+      <div class="card stat-card shadow-sm">
+        <div class="stat-number text-primary"><%= consultations.filter(c => c.status === 'pending_payment' || c.status === 'paid' || c.status === 'assigned').length %></div>
+        <div class="stat-label">جارية</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card stat-card shadow-sm">
+        <div class="stat-number text-success"><%= consultations.filter(c => c.status === 'answered').length %></div>
+        <div class="stat-label">بانتظار الرد</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card stat-card shadow-sm">
+        <div class="stat-number text-warning"><%= consultations.filter(c => c.status === 'closed').length %></div>
+        <div class="stat-label">منتهية</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card stat-card shadow-sm">
+        <div class="stat-number text-info"><%= consultations.length %></div>
+        <div class="stat-label">الإجمالي</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consultations List -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-white">
+      <h5 class="mb-0 fw-bold"><i class="bi bi-chat-dots"></i> استشاراتي</h5>
+    </div>
+    <div class="card-body p-0">
+      <% if (consultations.length === 0) { %>
+        <div class="text-center py-5">
+          <i class="bi bi-inbox" style="font-size: 3rem; color: #dee2e6;"></i>
+          <p class="text-muted mt-2">لا توجد استشارات بعد</p>
+          <a href="/client/new" class="btn btn-primary">اطلب استشارتك الأولى</a>
+        </div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>القسم</th>
+                <th>العنوان</th>
+                <th>المستشار</th>
+                <th><i class="bi bi-lightning-charge text-warning"></i></th><th>المبلغ</th>
+                <th>الحالة</th>
+                <th>التاريخ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% consultations.forEach((c, i) => { %>
+                <tr>
+                  <td><%= c.id %></td>
+                  <td><span class="badge bg-info"><%= c.category_name %></span></td>
+                  <td><%= c.title || c.question.substring(0, 30) + '...' %></td>
+                  <td><%= c.consultant_name || '—' %></td>
+                  <td><%= c.is_urgent ? '<span class="badge bg-danger px-1 py-0" title="عاجل">⚡</span>' : '—' %></td><td><td><%= c.amount %> ريال</td>
+                  <td>
+                    <% const statusMap = { 'draft': 'مسودة', 'pending_payment': 'بانتظار الدفع', 'paid': 'مدفوعة', 'assigned': 'محوّلة', 'answered': 'تم الرد', 'closed': 'مغلقة', 'cancelled': 'ملغية' }; %>
+                    <% const colorMap = { 'draft': 'secondary', 'pending_payment': 'warning', 'paid': 'success', 'assigned': 'info', 'answered': 'primary', 'closed': 'secondary', 'cancelled': 'danger' }; %>
+                    <span class="badge bg-<%= colorMap[c.status] %>"><%= statusMap[c.status] || c.status %></span>
+                  </td>
+                  <td class="small"><%= new Date(c.created_at).toLocaleDateString('ar-SA') %></td>
+                  <td>
+                    <a href="/client/consultation/<%= c.id %>" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>

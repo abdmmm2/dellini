@@ -1,0 +1,79 @@
+<div class="container py-4">
+  <a href="/admin/consultations" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-right"></i> رجوع</a>
+
+  <div class="card shadow-sm">
+    <div class="card-header bg-white">
+      <h5 class="fw-bold mb-0"><i class="bi bi-pencil-square"></i> تعديل الاستشارة #<%= consultation.id %></h5>
+    </div>
+    <div class="card-body p-4">
+      <div class="alert alert-info d-flex align-items-center gap-2">
+        <i class="bi bi-info-circle"></i>
+        <span>
+          <strong>العميل:</strong> <%= consultation.client_name %> |
+          <strong>المستشار:</strong> <%= consultation.consultant_name || '—' %> |
+          <strong>القسم:</strong> <%= consultation.category_name %> |
+          <strong>المبلغ:</strong> <%= consultation.amount %> ريال
+        </span>
+      </div>
+
+      <form action="/admin/consultation/edit/<%= consultation.id %>" method="POST">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">المستشار</label>
+            <select name="consultant_id" class="form-select">
+              <option value="">— بدون مستشار —</option>
+              <% consultants.forEach(c => { %>
+                <option value="<%= c.id %>" <%= consultation.consultant_id == c.id ? 'selected' : '' %>>
+                  <%= c.name %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">القسم</label>
+            <select name="category_id" class="form-select" required>
+              <% categories.forEach(cat => { %>
+                <option value="<%= cat.id %>" <%= consultation.category_id == cat.id ? 'selected' : '' %>>
+                  <%= cat.name_ar %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">الحالة</label>
+            <select name="status" class="form-select">
+              <% ['draft','pending_payment','paid','assigned','answered','closed','cancelled'].forEach(s => { %>
+                <option value="<%= s %>" <%= consultation.status === s ? 'selected' : '' %>>
+                  <%= {draft:'مسودة',pending_payment:'بانتظار الدفع',paid:'مدفوعة',assigned:'محوّلة',answered:'تم الرد',closed:'مغلقة',cancelled:'ملغية'}[s] %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">المبلغ (ريال)</label>
+            <input type="number" name="amount" class="form-control" value="<%= consultation.amount %>" step="10">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">العنوان</label>
+          <input type="text" name="title" class="form-control" value="<%= consultation.title || '' %>">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">السؤال</label>
+          <textarea name="question" rows="4" class="form-control"><%= consultation.question %></textarea>
+        </div>
+
+        <hr>
+        <div class="d-flex gap-2">
+          <a href="/admin/consultations" class="btn btn-outline-secondary">إلغاء</a>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ التعديلات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

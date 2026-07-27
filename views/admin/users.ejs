@@ -1,0 +1,97 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-people"></i> إدارة المستخدمين</h3>
+    <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-right"></i> رجوع</a>
+  </div>
+
+  <!-- Search -->
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <form method="GET" class="row g-2">
+        <div class="col-md-4">
+          <input type="text" name="search" class="form-control" placeholder="بحث بالاسم أو البريد..." value="<%= search || '' %>">
+        </div>
+        <div class="col-md-3">
+          <select name="role_filter" class="form-select">
+            <option value="">جميع الأدوار</option>
+            <option value="admin" <%= role_filter === 'admin' ? 'selected' : '' %>>مدير</option>
+            <option value="supervisor" <%= role_filter === 'supervisor' ? 'selected' : '' %>>مشرف</option>
+            <option value="consultant" <%= role_filter === 'consultant' ? 'selected' : '' %>>مستشار</option>
+            <option value="client" <%= role_filter === 'client' ? 'selected' : '' %>>عميل</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الاسم</th>
+              <th>البريد</th>
+              <th>الجوال</th>
+              <th>الدور</th>
+              <th>تغيير الدور</th>
+              <th>الحالة</th>
+              <th>التسجيل</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% (users || []).forEach(u => { %>
+              <tr>
+                <td><%= u.id %></td>
+                <td class="fw-bold"><%= u.name %></td>
+                <td><%= u.email %></td>
+                <td><%= u.phone || '—' %></td>
+                <td>
+                  <% const roleBadge = {'admin':'bg-danger','supervisor':'bg-warning','consultant':'bg-primary','client':'bg-success'}; %>
+                  <span class="badge <%= roleBadge[u.role] || 'bg-secondary' %>"><%= u.role === 'admin' ? 'مدير' : u.role === 'supervisor' ? 'مشرف' : u.role === 'consultant' ? 'مستشار' : 'عميل' %></span>
+                </td>
+                <td>
+                  <form action="/admin/users/role" method="POST" class="d-inline" onsubmit="return confirm('تأكيد تغيير دور <%= u.name %>؟')">
+                    <input type="hidden" name="user_id" value="<%= u.id %>">
+                    <div class="input-group input-group-sm">
+                      <select name="role" class="form-select form-select-sm" style="min-width:90px">
+                        <option value="client" <%= u.role === 'client' ? 'selected' : '' %>>عميل</option>
+                        <option value="consultant" <%= u.role === 'consultant' ? 'selected' : '' %>>مستشار</option>
+                        <option value="supervisor" <%= u.role === 'supervisor' ? 'selected' : '' %>>مشرف</option>
+                        <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>مدير</option>
+                      </select>
+                      <button class="btn btn-outline-primary btn-sm"><i class="bi bi-check-lg"></i></button>
+                    </div>
+                  </form>
+                </td>
+                <td>
+                  <span class="badge bg-<%= u.is_active ? 'success' : 'danger' %>">
+                    <%= u.is_active ? 'نشط' : 'معطل' %>
+                  </span>
+                </td>
+                <td class="small"><%= new Date(u.created_at).toLocaleDateString('ar-SA') %></td>
+                <td class="text-nowrap">
+                  <a href="/admin/user/edit/<%= u.id %>" class="btn btn-sm btn-outline-warning">
+                    <i class="bi bi-pencil-square"></i> تعديل
+                  </a>
+                  <form action="/admin/users/toggle" method="POST" class="d-inline"
+                    onsubmit="return confirm('تأكيد <%= u.is_active ? 'تعطيل' : 'تفعيل' %> الحساب؟')">
+                    <input type="hidden" name="user_id" value="<%= u.id %>">
+                    <button class="btn btn-sm <%= u.is_active ? 'btn-outline-danger' : 'btn-outline-success' %>">
+                      <i class="bi bi-<%= u.is_active ? 'pause-circle' : 'play-circle' %>"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,168 @@
+<div class="container py-4">
+  <a href="/admin/user/edit/<%= user.id %>" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-right"></i> رجوع للحساب</a>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0"><i class="bi bi-wallet2"></i> محفظة: <%= user.name %></h5>
+          <span class="badge bg-<%= user.role === 'admin' ? 'danger' : user.role === 'consultant' ? 'primary' : 'success' %> fs-6">
+            <%= user.role === 'admin' ? 'مدير' : user.role === 'consultant' ? 'مستشار' : 'عميل' %>
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="row text-center mb-4">
+            <div class="col-6">
+              <div class="fw-bold h2 text-success"><%= wallet.balance || 0 %> ريال</div>
+              <div class="text-muted small">الرصيد الحالي</div>
+            </div>
+            <div class="col-6">
+              <div class="fw-bold h2 text-primary"><%= transactions.length %></div>
+              <div class="text-muted small">عدد المعاملات</div>
+            </div>
+          </div>
+
+          <!-- Charge Form -->
+          <div class="card bg-light mb-3">
+            <div class="card-body">
+              <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle text-success"></i> شحن المحفظة</h6>
+              <form action="/admin/wallet/charge/<%= user.id %>" method="POST">
+                <div class="row g-2">
+                  <div class="col-md-4">
+                    <div class="input-group">
+                      <span class="input-group-text">ريال</span>
+                      <input type="number" name="amount" class="form-control" placeholder="المبلغ" min="100" step="1" required>
+                    </div>
+                    <small class="text-muted">الحد الأدنى: 100 ريال</small>
+                  </div>
+                  <div class="col-md-4">
+                    <select name="payment_method" class="form-select">
+                      <option value="admin">💳 الإدارة (مباشر)</option>
+                      <option value="stcpay">📱 STC Pay</option>
+                      <option value="applepay">🍎 Apple Pay</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <button type="submit" class="btn btn-success w-100">
+                      <i class="bi bi-lightning-charge"></i> شحن
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Transactions -->
+          <h6 class="fw-bold mb-3"><i class="bi bi-clock-history"></i> سجل المعاملات</h6>
+          <% if (!transactions || transactions.length === 0) { %>
+            <div class="text-center py-4 text-muted">
+              <i class="bi bi-inbox fs-1"></i>
+              <p class="mt-2">لا توجد معاملات بعد</p>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>النوع</th>
+                    <th>المبلغ</th>
+                    <th>طريقة الدفع</th>
+                    <th>الوصف</th>
+                    <th>الحالة</th>
+                    <th>التاريخ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% transactions.forEach((t, i) => { %>
+                    <tr>
+                      <td><%= i + 1 %></td>
+                      <td>
+                        <% if (t.type === 'deposit') { %>
+                          <span class="badge bg-success">💰 إيداع</span>
+                        <% } else if (t.type === 'payment') { %>
+                          <span class="badge bg-danger">💸 دفع</span>
+                        <% } else if (t.type === 'withdrawal') { %>
+                          <span class="badge bg-warning">🏦 سحب</span>
+                        <% } else { %>
+                          <span class="badge bg-info">🔄 مسترد</span>
+                        <% } %>
+                      </td>
+                      <td class="fw-bold <%= t.type === 'deposit' ? 'text-success' : 'text-danger' %>">
+                        <%= t.type === 'deposit' ? '+' : '-' %><%= t.amount %> ريال
+                      </td>
+                      <td>
+                        <% if (t.payment_method === 'admin') { %>
+                          <span class="badge bg-secondary">يدوي</span>
+                        <% } else if (t.payment_method === 'stcpay') { %>
+                          <span class="badge bg-success">STC Pay</span>
+                        <% } else if (t.payment_method === 'applepay') { %>
+                          <span class="badge bg-dark">Apple Pay</span>
+                        <% } else { %>
+                          <span class="badge bg-info"><%= t.payment_method %></span>
+                        <% } %>
+                      </td>
+                      <td class="small"><%= t.description || '—' %></td>
+                      <td>
+                        <span class="badge bg-<%= t.status === 'completed' ? 'success' : t.status === 'pending' ? 'warning' : 'danger' %>">
+                          <%= t.status === 'completed' ? 'مكتمل' : t.status === 'pending' ? 'معلق' : 'فشل' %>
+                        </span>
+                      </td>
+                      <td class="small"><%= new Date(t.created_at).toLocaleDateString('ar-SA') %></td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+          <h6 class="fw-bold mb-0"><i class="bi bi-person"></i> معلومات المستخدم</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <span class="text-muted small">الاسم</span>
+            <div class="fw-bold"><%= user.name %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">البريد</span>
+            <div><%= user.email %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">الجوال</span>
+            <div><%= user.phone || '—' %></div>
+          </div>
+          <hr>
+          <a href="/admin/user/edit/<%= user.id %>" class="btn btn-outline-primary w-100">
+            <i class="bi bi-pencil-square"></i> تعديل الحساب
+          </a>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart"></i> إحصائيات</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-2 d-flex justify-content-between">
+            <span>إجمالي الإيداعات</span>
+            <span class="fw-bold text-success">
+              <%= transactions.filter(t => t.type === 'deposit' && t.status === 'completed').reduce((s, t) => s + t.amount, 0) %> ريال
+            </span>
+          </div>
+          <div class="mb-2 d-flex justify-content-between">
+            <span>إجمالي المدفوعات</span>
+            <span class="fw-bold text-danger">
+              <%= transactions.filter(t => t.type === 'payment' && t.status === 'completed').reduce((s, t) => s + t.amount, 0) %> ريال
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

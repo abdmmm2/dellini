@@ -1,0 +1,75 @@
+<div class="container py-4">
+  <div class="step-indicator">
+    <div class="step completed">
+      <div class="step-number">✓</div>
+      <div class="step-label">اختر القسم</div>
+    </div>
+    <div class="step-connector completed"></div>
+    <div class="step active">
+      <div class="step-number">2</div>
+      <div class="step-label">اختر المستشار</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-label">اكتب استشارتك</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-label">الدفع</div>
+    </div>
+  </div>
+
+  <h3 class="fw-bold text-center mb-2"><i class="bi <%= category.icon %>"></i> <%= category.name_ar %></h3>
+  <p class="text-center text-muted mb-4"><%= category.description %></p>
+
+  <div class="row g-4">
+    <% if (consultants.length === 0) { %>
+      <div class="col-12 text-center py-5">
+        <i class="bi bi-person-x" style="font-size: 3rem; color: #dee2e6;"></i>
+        <p class="text-muted mt-2">لا يوجد مستشارون متاحون في هذا القسم حالياً</p>
+        <a href="/client/new" class="btn btn-primary">رجوع للأقسام</a>
+      </div>
+    <% } %>
+    <% consultants.forEach(con => { %>
+      <div class="col-md-6">
+        <div class="card consultant-card" onclick="window.location='/client/new/step3/<%= category.id %>/<%= con.id %>'" style="cursor:pointer">
+          <div class="d-flex align-items-start gap-3">
+            <div class="avatar"><%= con.user_name.charAt(0) %></div>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h6 class="fw-bold mb-1"><%= con.user_name %> <%- include("../partials/verify-badge", { tier: con.verification_tier || "none" }) %></h6>
+                  <div class="small">
+                    <% for (let i = 0; i < 5; i++) { %>
+                      <i class="bi bi-star<%= i < Math.round(con.rating) ? '-fill text-warning' : '' %>"></i>
+                    <% } %>
+                    <span class="ms-1">(<%= con.rating %>)</span>
+                  </div>
+                  <p class="small text-muted mt-1 mb-0"><%= con.bio %></p>
+                  <span class="badge bg-light text-dark mt-1">
+                    <i class="bi bi-briefcase"></i> <%= con.experience_years || 0 %> سنوات خبرة
+                  </span>
+                  <span class="badge bg-light text-dark mt-1">
+                    <i class="bi bi-check-circle"></i> <%= con.completed_count || 0 %> استشارة
+                  </span>
+                  <% if (con.credentials) { %>
+                    <span class="badge bg-light text-dark mt-1"><i class="bi bi-award"></i> <%= con.credentials %></span>
+                  <% } %>
+                </div>
+                <div class="text-center">
+                  <h4 class="fw-bold text-primary mb-1"><%= con.price %> <small class="fs-6">ريال</small></h4>
+                  <span class="small text-muted">لكل استشارة</span>
+                  <div class="mt-2">
+                    <button class="btn btn-primary btn-sm"><i class="bi bi-arrow-left"></i> اختر</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</div>

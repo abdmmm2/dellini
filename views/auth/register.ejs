@@ -1,0 +1,93 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow">
+        <div class="card-body p-4">
+          <div class="text-center mb-4">
+            <i class="bi bi-person-plus" style="font-size: 3rem; color: var(--primary);"></i>
+            <h3 class="fw-bold mt-2">إنشاء حساب جديد</h3>
+            <p class="text-muted">انضم إلى منصة دلني للاستشارات</p>
+          </div>
+
+          <form action="/register" method="POST">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">الاسم الكامل *</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-person"></i></span>
+                  <input type="text" name="name" class="form-control" required placeholder="الاسم الثلاثي">
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">رقم الجوال</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-phone"></i></span>
+                  <input type="tel" name="phone" class="form-control" placeholder="05xxxxxxxx">
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">البريد الإلكتروني *</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                <input type="email" name="email" class="form-control" required placeholder="example@email.com">
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">كلمة المرور *</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                  <input type="password" name="password" class="form-control" required minlength="6" placeholder="أقل شيء 6 أحرف">
+                </div>
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label class="form-label">تأكيد كلمة المرور *</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                  <input type="password" name="confirm_password" class="form-control" required minlength="6" placeholder="أعد إدخال كلمة المرور">
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label">نوع الحساب *</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="role" value="client" id="roleClient" checked>
+                  <label class="form-check-label" for="roleClient">
+                    <i class="bi bi-person"></i> عميل
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="role" value="consultant" id="roleConsultant">
+                  <label class="form-check-label" for="roleConsultant">
+                    <i class="bi bi-person-badge"></i> مستشار
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="role" value="admin" id="roleAdmin">
+                  <label class="form-check-label" for="roleAdmin">
+                    <i class="bi bi-shield-lock"></i> إداري
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 btn-lg mb-3">
+              <i class="bi bi-person-plus"></i> إنشاء الحساب
+            </button>
+
+            <div class="text-center">
+              <p class="mb-0">لديك حساب بالفعل؟ <a href="/login" class="fw-bold">تسجيل الدخول</a></p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

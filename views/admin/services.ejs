@@ -1,0 +1,234 @@
+<div class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-bookmark-check text-success"></i> إدارة الخدمات</h3>
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">
+      <i class="bi bi-plus-lg"></i> خدمة جديدة
+    </button>
+  </div>
+
+  <!-- Filter by category -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body py-2">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="fw-bold small">تصفية:</span>
+        <button class="btn btn-sm btn-outline-primary filter-btn active" data-cat="all">الكل</button>
+        <% categories.forEach(c => { %>
+          <button class="btn btn-sm btn-outline-secondary filter-btn" data-cat="<%= c.id %>"><%= c.name_ar %></button>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Services list grouped by category -->
+  <% categories.forEach(cat => { %>
+    <div class="card shadow-sm mb-3 service-group" data-cat="<%= cat.id %>">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+        <h6 class="fw-bold mb-0">
+          <i class="bi <%= cat.icon %> text-primary"></i> <%= cat.name_ar %>
+        </h6>
+        <span class="badge bg-primary"><%= services.filter(s => s.category_id === cat.id).length %></span>
+      </div>
+      <div class="card-body p-2">
+        <% const catServices = services.filter(s => s.category_id === cat.id); %>
+        <% if (catServices.length === 0) { %>
+          <p class="text-muted small text-center py-2 mb-0">لا توجد خدمات لهذا القسم</p>
+        <% } else { %>
+          <div class="row g-2">
+            <% catServices.forEach(s => { %>
+              <div class="col-md-4 col-6">
+                <div class="d-flex justify-content-between align-items-center p-2 border rounded <%= s.is_active ? 'bg-white' : 'bg-light' %>">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="bi <%= s.icon %> text-success"></i>
+                    <div>
+                      <div class="fw-bold small"><%= s.name_ar %></div>
+                      <small class="text-muted"><%= s.description || '' %></small>
+                      <div>
+                        <% if (s.is_active) { %>
+                          <span class="badge bg-success" style="font-size:0.6rem;">نشط</span>
+                        <% } else { %>
+                          <span class="badge bg-secondary" style="font-size:0.6rem;">غير نشط</span>
+                        <% } %>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editService(<%= s.id %>, <%= s.category_id %>, '<%= s.name_ar.replace(/'/g, "\\'") %>', '<%= (s.description || '').replace(/'/g, "\\'") %>', '<%= s.icon %>', <%= s.is_active %>, <%= s.sort_order %>)" title="تعديل">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <form method="POST" action="/admin/services/delete" onsubmit="return confirm('حذف الخدمة؟')" class="d-inline">
+                      <input type="hidden" name="id" value="<%= s.id %>">
+                      <button class="btn btn-sm btn-outline-danger" title="حذف"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  <% }) %>
+
+  <!-- Assign services to consultants -->
+  <div class="card shadow-sm mt-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+      <h6 class="fw-bold mb-0"><i class="bi bi-person-check text-info"></i> إسناد الخدمات للمستشارين</h6>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <% consultants.forEach(con => { %>
+          <% const assigned = (consultantServices[con.id] || []); %>
+          <div class="col-md-6">
+            <div class="border rounded p-3">
+              <div class="fw-bold mb-2"><%= con.user_name %></div>
+              <form method="POST" action="/admin/services/assign">
+                <input type="hidden" name="consultant_id" value="<%= con.id %>">
+                <div class="row g-1">
+                  <% allServices.forEach(sv => { %>
+                    <div class="col-6">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="service_ids" value="<%= sv.id %>" id="sv<%= con.id %>_<%= sv.id %>" <%= assigned.includes(sv.id) ? 'checked' : '' %>>
+                        <label class="form-check-label small" for="sv<%= con.id %>_<%= sv.id %>">
+                          <%= sv.name_ar %>
+                          <small class="text-muted">(<%= sv.cat_name %>)</small>
+                        </label>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+                <button type="submit" class="btn btn-sm btn-info mt-2"><i class="bi bi-check2"></i> حفظ</button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/admin/services/add">
+        <div class="modal-header">
+          <h5 class="fw-bold"><i class="bi bi-plus-circle"></i> إضافة خدمة جديدة</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">القسم</label>
+            <select name="category_id" class="form-select" required>
+              <option value="">اختر القسم</option>
+              <% categories.forEach(c => { %>
+                <option value="<%= c.id %>"><%= c.name_ar %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">اسم الخدمة</label>
+            <input type="text" name="name_ar" class="form-control" placeholder="مثال: الأحوال الشخصية" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الوصف</label>
+            <input type="text" name="description" class="form-control" placeholder="مثال: مشاكل الطلاق والخلع والحضانة">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">أيقونة</label>
+            <input type="text" name="icon" class="form-control" value="bi-bookmark-check">
+            <small class="text-muted">أيقونات Bootstrap: bi-bookmark-check, bi-heart, bi-bank, bi-people, ...</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الترتيب</label>
+            <input type="number" name="sort_order" class="form-control" value="0">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success"><i class="bi bi-check2"></i> إضافة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/admin/services/edit">
+        <div class="modal-header">
+          <h5 class="fw-bold"><i class="bi bi-pencil"></i> تعديل الخدمة</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" id="edit_id">
+          <div class="mb-3">
+            <label class="form-label fw-bold">القسم</label>
+            <select name="category_id" id="edit_category_id" class="form-select" required>
+              <% categories.forEach(c => { %>
+                <option value="<%= c.id %>"><%= c.name_ar %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">اسم الخدمة</label>
+            <input type="text" name="name_ar" id="edit_name_ar" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">الوصف</label>
+            <input type="text" name="description" id="edit_description" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">أيقونة</label>
+            <input type="text" name="icon" id="edit_icon" class="form-control">
+          </div>
+          <div class="row">
+            <div class="col-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">نشط</label>
+                <select name="is_active" id="edit_is_active" class="form-select">
+                  <option value="1">نشط</option>
+                  <option value="0">غير نشط</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="mb-3">
+                <label class="form-label fw-bold">الترتيب</label>
+                <input type="number" name="sort_order" id="edit_sort_order" class="form-control">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> حفظ التغييرات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function editService(id, catId, name, desc, icon, active, sort) {
+  document.getElementById('edit_id').value = id;
+  document.getElementById('edit_category_id').value = catId;
+  document.getElementById('edit_name_ar').value = name;
+  document.getElementById('edit_description').value = desc;
+  document.getElementById('edit_icon').value = icon;
+  document.getElementById('edit_is_active').value = active;
+  document.getElementById('edit_sort_order').value = sort;
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    const cat = this.dataset.cat;
+    document.querySelectorAll('.service-group').forEach(g => {
+      g.style.display = (cat === 'all' || g.dataset.cat === cat) ? '' : 'none';
+    });
+  });
+});
+</script>

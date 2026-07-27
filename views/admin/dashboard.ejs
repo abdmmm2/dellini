@@ -1,0 +1,219 @@
+<div class="container-fluid py-4 px-4">
+  <h3 class="fw-bold mb-4"><i class="bi bi-speedometer2"></i> لوحة التحكم</h3>
+
+  <!-- Stats Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+      <div class="card text-white bg-primary stat-card">
+        <div class="stat-number"><%= stats.users %></div>
+        <div class="stat-label opacity-75">إجمالي المستخدمين</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card text-white bg-success stat-card">
+        <div class="stat-number"><%= stats.consultants %></div>
+        <div class="stat-label opacity-75">مستشار</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card text-white bg-warning stat-card">
+        <div class="stat-number"><%= stats.consultations %></div>
+        <div class="stat-label opacity-75">استشارة</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card text-white bg-info stat-card">
+        <div class="stat-number"><%= stats.totalRevenue %> ريال</div>
+        <div class="stat-label opacity-75">إيرادات المنصة</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Second Stats Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-danger border-2">
+        <div class="card-body text-center">
+          <div class="fw-bold h3 text-danger"><%= stats.pendingWithdrawals %></div>
+          <div class="small">طلبات سحب معلقة</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-warning border-2">
+        <div class="card-body text-center">
+          <div class="fw-bold h3 text-warning"><%= stats.unverifiedConsultants %></div>
+          <div class="small">مستشارين غير موثقين</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-primary border-2">
+        <div class="card-body text-center">
+          <div class="fw-bold h3 text-primary"><%= stats.pendingConsultations %></div>
+          <div class="small">استشارات بانتظار الرد</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-success border-2">
+        <div class="card-body text-center">
+          <div class="fw-bold h3 text-success"><%= stats.closedConsultations %></div>
+          <div class="small">استشارات منتهية</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Menu Links -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <a href="/admin/consultations" class="text-decoration-none">
+        <div class="card h-100 text-center p-3">
+          <i class="bi bi-chat-dots fs-1 text-primary"></i>
+          <h6 class="mt-2">الاستشارات</h6>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="/admin/categories" class="text-decoration-none">
+        <div class="card h-100 text-center p-3">
+          <i class="bi bi-collection fs-1 text-success"></i>
+          <h6 class="mt-2">الأقسام</h6>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="/admin/ads" class="text-decoration-none">
+        <div class="card h-100 text-center p-3">
+          <i class="bi bi-megaphone fs-1 text-warning"></i>
+          <h6 class="mt-2">الإعلانات</h6>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3">
+      <a href="/admin/consultants" class="text-decoration-none">
+        <div class="card h-100 text-center p-3">
+          <i class="bi bi-person-badge fs-1 text-info"></i>
+          <h6 class="mt-2">المستشارون</h6>
+        </div>
+      </a>
+    </div>
+    <% if (isAdmin) { %>
+      <div class="col-md-3">
+        <a href="/admin/users" class="text-decoration-none">
+          <div class="card h-100 text-center p-3">
+            <i class="bi bi-people fs-1 text-warning"></i>
+            <h6 class="mt-2">المستخدمون</h6>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="/admin/verification" class="text-decoration-none">
+          <div class="card h-100 text-center p-3">
+            <i class="bi bi-patch-check fs-1 text-info"></i>
+            <h6 class="mt-2">التوثيق</h6>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="/admin/withdrawals" class="text-decoration-none">
+          <div class="card h-100 text-center p-3">
+            <i class="bi bi-cash-stack fs-1 text-danger"></i>
+            <h6 class="mt-2">طلبات السحب</h6>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="/admin/reports" class="text-decoration-none">
+          <div class="card h-100 text-center p-3">
+            <i class="bi bi-graph-up fs-1 text-primary"></i>
+            <h6 class="mt-2">التقارير</h6>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="/admin/consultant-categories" class="text-decoration-none">
+          <div class="card h-100 text-center p-3">
+            <i class="bi bi-link-45deg fs-1 text-primary"></i>
+            <h6 class="mt-2">ربط المستشارين</h6>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="/admin/services" class="text-decoration-none">
+          <div class="card h-100 text-center p-3">
+            <i class="bi bi-bookmark-check fs-1 text-success"></i>
+            <h6 class="mt-2">الخدمات</h6>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="/admin/bank-transfers" class="text-decoration-none">
+          <div class="card h-100 text-center p-3">
+            <i class="bi bi-bank fs-1 text-success"></i>
+            <h6 class="mt-2">تحويلات بنكية</h6>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="/admin/payment-settings" class="text-decoration-none">
+          <div class="card h-100 text-center p-3">
+            <i class="bi bi-credit-card-2-front fs-1 text-primary"></i>
+            <h6 class="mt-2">إعدادات الدفع</h6>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-3">
+        <a href="/admin/whatsapp-bulk" class="text-decoration-none">
+          <div class="card h-100 text-center p-3">
+            <i class="bi bi-whatsapp fs-1 text-success"></i>
+            <h6 class="mt-2">واتساب جماعي</h6>
+          </div>
+        </a>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Recent Consultations -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0"><i class="bi bi-clock-history"></i> آخر الاستشارات</h5>
+      <a href="/admin/consultations" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>العميل</th>
+              <th>المستشار</th>
+              <th>القسم</th>
+              <th>المبلغ</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% recentConsultations.forEach(c => { %>
+              <tr>
+                <td><%= c.id %></td>
+                <td><%= c.client_name %></td>
+                <td><%= c.consultant_name || '—' %></td>
+                <td><span class="badge bg-info"><%= c.category_name %></span></td>
+                <td><%= c.amount %> ريال</td>
+                <td>
+                  <% const sm = {'draft':'مسودة','pending_payment':'بانتظار الدفع','paid':'مدفوعة','assigned':'محوّلة','answered':'تم الرد','closed':'مغلقة'}; %>
+                  <% const cm = {'assigned':'warning','paid':'success','answered':'primary','closed':'secondary'}; %>
+                  <span class="badge bg-<%= cm[c.status] || 'secondary' %>"><%= sm[c.status] || c.status %></span>
+                </td>
+                <td class="small"><%= new Date(c.created_at).toLocaleDateString('ar-SA') %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

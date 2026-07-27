@@ -1,0 +1,159 @@
+<div class="container py-4">
+  <a href="/admin/users" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-right"></i> رجوع</a>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+          <h5 class="fw-bold mb-0"><i class="bi bi-whatsapp text-success"></i> التواصل مع: <%= user.name %></h5>
+        </div>
+        <div class="card-body">
+          <!-- WhatsApp Quick Links -->
+          <div class="alert alert-success">
+            <div class="d-flex align-items-center gap-3">
+              <i class="bi bi-whatsapp" style="font-size: 2rem;"></i>
+              <div>
+                <h6 class="mb-1 fw-bold">التواصل عبر واتساب</h6>
+                <p class="mb-0 text-muted small">
+                  الرقم: <%= contactPhone || 'غير متوفر' %>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <% if (contactPhone) { 
+            const cleanPhone = contactPhone.replace(/^0/, '');
+          %>
+            <!-- Quick message templates -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">رسالة سريعة</label>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <button class="btn btn-sm btn-outline-success" onclick="sendWA('<%= cleanPhone %>', 'السلام عليكم، هذا تنبيه من منصة دلني بخصوص استشارتك.')">
+                  <i class="bi bi-send"></i> تنبيه عام
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="sendWA('<%= cleanPhone %>', 'عذراً على الإزعاج، نود التنبيه بأنه تم الرد على استشارتك في المنصة.')">
+                  <i class="bi bi-chat-dots"></i> تنبيه رد
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="sendWA('<%= cleanPhone %>', 'مرحباً، منصة دلني تطلب منك متابعة استشارتك حيث أنها لا تزال بانتظار الرد.')">
+                  <i class="bi bi-clock"></i> متابعة
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="sendWA('<%= cleanPhone %>', 'نشكرك على استخدام منصة دلني. هل تحتاج مساعدة؟')">
+                  <i class="bi bi-emoji-smile"></i> استفسار
+                </button>
+              </div>
+
+              <!-- Custom message -->
+              <div class="input-group">
+                <textarea id="customMsg" class="form-control" rows="2" placeholder="اكتب رسالة مخصصة..."></textarea>
+                <button class="btn btn-success" onclick="sendWACustom('<%= cleanPhone %>')">
+                  <i class="bi bi-send"></i> إرسال
+                </button>
+              </div>
+              <div class="form-text">
+                سيتم فتح واتساب ويب برسالة جاهزة. تأكد من أن الرقم مسجل في واتساب.
+              </div>
+            </div>
+          <% } else { %>
+            <div class="alert alert-warning">
+              <i class="bi bi-exclamation-triangle"></i>
+              هذا المستخدم ليس لديه رقم واتساب مسجل.
+              <a href="/admin/user/edit/<%= user.id %>" class="btn btn-sm btn-warning mt-2">
+                <i class="bi bi-pencil"></i> إضافة رقم واتساب
+              </a>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Recent Consultations -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h6 class="fw-bold mb-0"><i class="bi bi-clock-history"></i> آخر الاستشارات</h6>
+        </div>
+        <div class="card-body p-0">
+          <% if (consultations.length === 0) { %>
+            <div class="text-center py-4 text-muted">
+              <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+              <p class="mt-2">لا توجد استشارات</p>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>القسم</th>
+                    <th>الحالة</th>
+                    <th>التاريخ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% consultations.forEach(c => { %>
+                    <tr>
+                      <td><%= c.id %></td>
+                      <td><%= c.category_name %></td>
+                      <td>
+                        <% const sm = {'assigned':'بانتظار الرد','answered':'تم الرد','closed':'مغلقة','paid':'مدفوعة'}; %>
+                        <span class="badge bg-<%= c.status === 'assigned' ? 'warning' : c.status === 'answered' ? 'primary' : 'secondary' %>">
+                          <%= sm[c.status] || c.status %>
+                        </span>
+                      </td>
+                      <td class="small"><%= new Date(c.created_at).toLocaleDateString('ar-SA') %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h6 class="fw-bold mb-0"><i class="bi bi-person"></i> <%= user.name %></h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <span class="text-muted small">البريد</span>
+            <div><%= user.email %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">الجوال</span>
+            <div dir="ltr"><%= user.phone || '—' %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">واتساب</span>
+            <div dir="ltr"><%= user.whatsapp || user.phone || '—' %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">الدور</span>
+            <div>
+              <span class="badge bg-<%= user.role === 'admin' ? 'danger' : user.role === 'supervisor' ? 'warning' : user.role === 'consultant' ? 'primary' : 'success' %>">
+                <%= user.role === 'admin' ? 'مدير' : user.role === 'supervisor' ? 'مشرف' : user.role === 'consultant' ? 'مستشار' : 'عميل' %>
+              </span>
+            </div>
+          </div>
+          <hr>
+          <a href="/admin/user/edit/<%= user.id %>" class="btn btn-outline-primary w-100">
+            <i class="bi bi-pencil"></i> تعديل الحساب
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function sendWA(phone, msg) {
+  const encoded = encodeURIComponent(msg);
+  window.open(`https://wa.me/966${phone}?text=${encoded}`, '_blank');
+}
+
+function sendWACustom(phone) {
+  const msg = document.getElementById('customMsg').value.trim();
+  if (!msg) { alert('الرجاء كتابة رسالة'); return; }
+  sendWA(phone, msg);
+}
+</script>

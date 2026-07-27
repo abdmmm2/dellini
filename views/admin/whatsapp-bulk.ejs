@@ -1,0 +1,130 @@
+<div class="container py-4">
+  <a href="/admin" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-right"></i> رجوع</a>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+      <h5 class="fw-bold mb-0"><i class="bi bi-whatsapp text-success"></i> واتساب جماعي</h5>
+    </div>
+    <div class="card-body p-4">
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i>
+        اختر المستخدمين وأرسل رسالة جماعية عبر واتساب. سيتم فتح واتساب ويب لكل مستخدم على حدة.
+      </div>
+
+      <!-- Filters -->
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <select id="roleFilter" class="form-select" onchange="filterUsers()">
+            <option value="all">جميع الأدوار</option>
+            <option value="client">عملاء</option>
+            <option value="consultant">مستشارين</option>
+            <option value="supervisor">مشرفين</option>
+            <option value="admin">مديرين</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <input type="text" id="searchFilter" class="form-control" placeholder="بحث..." onkeyup="filterUsers()">
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-success w-100" onclick="sendBulkWA()">
+            <i class="bi bi-whatsapp"></i> إرسال للجميع
+          </button>
+        </div>
+      </div>
+
+      <!-- Message Template -->
+      <div class="mb-3">
+        <label class="form-label fw-bold">نموذج الرسالة</label>
+        <textarea id="bulkMessage" class="form-control" rows="3">السلام عليكم، منصة دلني للاستشارات تذكركم بمتابعة استشاراتكم على المنصة. شكراً لكم.</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0">
+        <i class="bi bi-people"></i> المستخدمين
+        <span class="badge bg-primary" id="userCount"><%= users.length %></span>
+      </h5>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleAll()">
+        <label class="form-check-label" for="selectAll">تحديد الكل</label>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="width:40px">✓</th>
+              <th>الاسم</th>
+              <th>الدور</th>
+              <th>واتساب</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <% users.forEach(u => { %>
+              <tr class="user-row" data-role="<%= u.role %>" data-name="<%= u.name %>">
+                <td>
+                  <input type="checkbox" class="user-check" value="<%= (u.whatsapp || u.phone || '').replace(/^0/, '') %>"
+                    data-name="<%= u.name %>" <%= (u.whatsapp || u.phone) ? '' : 'disabled' %>>
+                </td>
+                <td class="fw-bold"><%= u.name %></td>
+                <td>
+                  <span class="badge bg-<%= u.role === 'admin' ? 'danger' : u.role === 'supervisor' ? 'warning' : u.role === 'consultant' ? 'primary' : 'success' %>">
+                    <%= u.role === 'admin' ? 'مدير' : u.role === 'supervisor' ? 'مشرف' : u.role === 'consultant' ? 'مستشار' : 'عميل' %>
+                  </span>
+                </td>
+                <td dir="ltr" class="<%= (u.whatsapp || u.phone) ? '' : 'text-muted' %>">
+                  <%= u.whatsapp || u.phone || '—' %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleAll() {
+  const checked = document.getElementById('selectAll').checked;
+  document.querySelectorAll('.user-check:not(:disabled)').forEach(cb => cb.checked = checked);
+  updateCount();
+}
+
+function filterUsers() {
+  const role = document.getElementById('roleFilter').value;
+  const search = document.getElementById('searchFilter').value.toLowerCase();
+
+  document.querySelectorAll('.user-row').forEach(row => {
+    const matchesRole = role === 'all' || row.dataset.role === role;
+    const matchesSearch = !search || row.dataset.name.includes(search);
+    row.style.display = matchesRole && matchesSearch ? '' : 'none';
+  });
+  updateCount();
+}
+
+function updateCount() {
+  const visible = document.querySelectorAll('.user-check:not(:disabled)').length;
+  document.getElementById('userCount').textContent = visible;
+}
+
+function sendBulkWA() {
+  const msg = document.getElementById('bulkMessage').value.trim();
+  if (!msg) { alert('الرجاء كتابة رسالة'); return; }
+
+  const checked = document.querySelectorAll('.user-check:checked');
+  if (checked.length === 0) { alert('الرجاء اختيار مستخدم واحد على الأقل'); return; }
+
+  const encoded = encodeURIComponent(msg);
+  checked.forEach(cb => {
+    const phone = cb.value;
+    if (phone) {
+      window.open(`https://wa.me/966${phone}?text=${encoded}`, '_blank');
+    }
+  });
+}
+</script>

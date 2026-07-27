@@ -1,0 +1,99 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-speedometer2"></i> لوحة المستشار</h3>
+    <div>
+      <a href="/consultant/services" class="btn btn-outline-success btn-sm"><i class="bi bi-bookmark-check"></i> خدماتي</a>
+      <a href="/consultant/profile" class="btn btn-outline-primary btn-sm"><i class="bi bi-person"></i> ملفي</a>
+      <a href="/consultant/pricing" class="btn btn-outline-primary btn-sm"><i class="bi bi-coin"></i> أسعاري</a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+      <div class="card stat-card shadow-sm">
+        <div class="stat-number text-primary"><%= stats.pending %></div>
+        <div class="stat-label">بانتظار الرد</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card stat-card shadow-sm">
+        <div class="stat-number text-success"><%= stats.answered %></div>
+        <div class="stat-label">تم الرد</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card stat-card shadow-sm">
+        <div class="stat-number text-warning"><%= stats.closed %></div>
+        <div class="stat-label">منتهية</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card stat-card shadow-sm">
+        <div class="stat-number text-info"><%= stats.total %></div>
+        <div class="stat-label">الإجمالي</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Balance card -->
+  <div class="card bg-primary text-white mb-4">
+    <div class="card-body text-center py-3">
+      <div class="small">الرصيد الحالي</div>
+      <h2 class="fw-bold mb-0"><%= consultant.balance %> <small class="fs-6">ريال</small></h2>
+      <a href="/consultant/balance" class="btn btn-light btn-sm mt-2"><i class="bi bi-wallet2"></i> إدارة الرصيد</a>
+    </div>
+  </div>
+
+  <!-- Consultations -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-white">
+      <h5 class="mb-0 fw-bold"><i class="bi bi-chat-dots"></i> استشاراتي</h5>
+    </div>
+    <div class="card-body p-0">
+      <% if (consultations.length === 0) { %>
+        <div class="text-center py-5">
+          <i class="bi bi-inbox" style="font-size: 3rem; color: #dee2e6;"></i>
+          <p class="text-muted mt-2">لا توجد استشارات بعد</p>
+        </div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>القسم</th>
+                <th>العميل</th>
+                <th class="text-center"><i class="bi bi-lightning-charge text-warning"></i></th><th>المبلغ</th>
+                <th>الحالة</th>
+                <th>التاريخ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% consultations.forEach(c => { %>
+                <tr class="<%= c.status === 'assigned' || c.status === 'paid' ? 'table-warning' : '' %>">
+                  <td><%= c.id %></td>
+                  <td><span class="badge bg-info"><%= c.category_name %></span></td>
+                  <td><%= c.hide_identity ? '🕵️ ' + c.client_nickname : 'عميل' %></td>
+                  <td class="text-center"><%= c.is_urgent ? '<span class="badge bg-danger">⚡</span>' : '—' %></td><td><td><%= c.amount %> ريال</td>
+                  <td>
+                    <% const smap = {'draft':'مسودة','pending_payment':'بانتظار الدفع','paid':'مدفوعة','assigned':'جديد!','answered':'تم الرد','closed':'مغلقة'}; %>
+                    <% const cmap = {'assigned':'warning','paid':'success','answered':'primary','closed':'secondary'}; %>
+                    <span class="badge bg-<%= cmap[c.status] || 'secondary' %>"><%= smap[c.status] || c.status %></span>
+                  </td>
+                  <td class="small"><%= new Date(c.created_at).toLocaleDateString('ar-SA') %></td>
+                  <td>
+                    <a href="/consultant/consultation/<%= c.id %>" class="btn btn-sm <%= c.status === 'assigned' || c.status === 'paid' ? 'btn-warning' : 'btn-outline-primary' %>">
+                      <i class="bi bi-eye"></i> <%= c.status === 'assigned' || c.status === 'paid' ? 'رد' : 'عرض' %>
+                    </a>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,127 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-person-badge"></i> المستشارون</h3>
+    <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-right"></i> رجوع</a>
+  </div>
+
+  <!-- Summary -->
+  <div class="row g-2 mb-4">
+    <div class="col-md-3 col-6">
+      <div class="card text-white bg-primary stat-card text-center p-3">
+        <div class="fw-bold h4"><%= consultants.filter(c => c.is_verified).length %></div>
+        <div class="small opacity-75">موثّق</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card text-white bg-warning stat-card text-center p-3">
+        <div class="fw-bold h4"><%= consultants.filter(c => !c.is_verified).length %></div>
+        <div class="small opacity-75">قيد المراجعة</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card text-white bg-success stat-card text-center p-3">
+        <div class="fw-bold h4"><%= consultants.length %></div>
+        <div class="small opacity-75">إجمالي</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card text-white bg-info stat-card text-center p-3">
+        <div class="fw-bold h4"><%= consultants.reduce((s, c) => s + (c.balance || 0), 0) %> ريال</div>
+        <div class="small opacity-75">إجمالي الأرصدة</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الاسم</th>
+              <th>البريد</th>
+              <th>التقييم</th>
+              <th>الرصيد</th>
+              <th>الاستشارات</th>
+              <th>مستوى التوثيق</th>
+              <th>الحالة</th>
+              <th>توثيق</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% consultants.forEach(con => { %>
+              <tr class="<%= !con.is_verified ? 'table-warning' : '' %>">
+                <td><%= con.id %></td>
+                <td class="fw-bold"><%= con.user_name %>
+                  <%- include('../partials/verify-badge', { tier: con.verification_tier || 'none' }) %>
+                </td>
+                <td><%= con.email %></td>
+                <td>
+                  <% for (let i = 0; i < 5; i++) { %>
+                    <i class="bi bi-star<%= i < Math.round(con.rating) ? '-fill text-warning' : '' %> small"></i>
+                  <% } %>
+                  (<%= con.rating %>)
+                </td>
+                <td class="fw-bold"><%= con.balance %> ريال</td>
+                <td><%= con.consultations_count %></td>
+                <td>
+                  <form action="/admin/consultants/verify" method="POST" class="d-inline">
+                    <input type="hidden" name="consultant_id" value="<%= con.id %>">
+                    <div class="input-group input-group-sm">
+                      <select name="verification_tier" class="form-select form-select-sm" style="min-width:80px">
+                        <option value="none" <%= con.verification_tier === 'none' ? 'selected' : '' %>>—</option>
+                        <option value="black" <%= con.verification_tier === 'black' ? 'selected' : '' %>>⚫ أسود</option>
+                        <option value="blue" <%= con.verification_tier === 'blue' ? 'selected' : '' %>>🔵 أزرق</option>
+                        <option value="silver" <%= con.verification_tier === 'silver' ? 'selected' : '' %>>⚪ فضي</option>
+                        <option value="gold" <%= con.verification_tier === 'gold' ? 'selected' : '' %>>🟡 ذهبي</option>
+                        <option value="platinum" <%= con.verification_tier === 'platinum' ? 'selected' : '' %>>💎 بلاتيني</option>
+                      </select>
+                      <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                    </div>
+                  </form>
+                </td>
+                <td>
+                  <% if (con.is_verified) { %>
+                    <span class="badge bg-success">موثق ✅</span>
+                  <% } else { %>
+                    <span class="badge bg-warning">⏳</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (!con.is_verified) { %>
+                    <form action="/admin/consultants/verify" method="POST" class="d-inline"
+                      onsubmit="return confirm('توثيق هذا المستشار؟')">
+                      <input type="hidden" name="consultant_id" value="<%= con.id %>">
+                      <input type="hidden" name="action" value="approve">
+                      <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-patch-check"></i> توثيق
+                      </button>
+                    </form>
+                  <% } else { %>
+                    <form action="/admin/consultants/verify" method="POST" class="d-inline"
+                      onsubmit="return confirm('إلغاء توثيق هذا المستشار؟')">
+                      <input type="hidden" name="consultant_id" value="<%= con.id %>">
+                      <input type="hidden" name="action" value="reject">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </form>
+                  <% } %>
+                </td>
+                <td>
+                  <a href="/admin/user/edit/<%= con.user_id %>" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

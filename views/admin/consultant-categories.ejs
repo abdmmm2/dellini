@@ -1,0 +1,123 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-link-45deg"></i> ربط المستشارين بالأقسام</h3>
+    <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-right"></i> رجوع</a>
+  </div>
+
+  <div class="row">
+    <!-- Add Link Form -->
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="fw-bold mb-0"><i class="bi bi-plus-circle"></i> إضافة ربط جديد</h5>
+        </div>
+        <div class="card-body">
+          <form action="/admin/consultant-categories/add" method="POST">
+            <div class="mb-3">
+              <label class="form-label fw-bold">المستشار</label>
+              <select name="consultant_id" class="form-select" required>
+                <option value="">اختر مستشار...</option>
+                <% (consultants || []).forEach(c => { %>
+                  <option value="<%= c.id %>"><%= c.user_name %> — <%= c.email %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">القسم</label>
+              <select name="category_id" class="form-select" required>
+                <option value="">اختر قسم...</option>
+                <% 
+                  const mainCats = (categories || []).filter(c => !c.parent_id);
+                  const subCats = (categories || []).filter(c => c.parent_id);
+                %>
+                <% mainCats.forEach(cat => { %>
+                  <option value="<%= cat.id %>">📁 <%= cat.name_ar %></option>
+                  <% subCats.filter(s => s.parent_id === cat.id).forEach(sub => { %>
+                    <option value="<%= sub.id %>">&nbsp;&nbsp;&nbsp;↳ <%= sub.name_ar %></option>
+                  <% }); %>
+                <% }); %>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">السعر (ريال)</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-cash"></i></span>
+                <input type="number" name="price" class="form-control" value="200" min="0" step="1" required>
+                <span class="input-group-text">ريال</span>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-link-45deg"></i> ربط
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Existing Links -->
+    <div class="col-lg-7 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="fw-bold mb-0"><i class="bi bi-list-check"></i> الروابط الحالية</h5>
+        </div>
+        <div class="card-body p-0">
+          <% if (!links || links.length === 0) { %>
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-inbox fs-1"></i>
+              <p class="mt-2">لا توجد روابط بعد</p>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>المستشار</th>
+                    <th>القسم</th>
+                    <th>السعر</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% links.forEach(l => { %>
+                    <tr>
+                      <td class="fw-bold"><%= l.consultant_name %></td>
+                      <td><span class="badge bg-info"><%= l.category_name %></span></td>
+                      <td class="fw-bold text-success"><%= l.price %> ريال</td>
+                      <td>
+                        <form action="/admin/consultant-categories/remove" method="POST" class="d-inline"
+                          onsubmit="return confirm('إلغاء ربط المستشار بهذا القسم؟')">
+                          <input type="hidden" name="id" value="<%= l.id %>">
+                          <button class="btn btn-sm btn-outline-danger"><i class="bi bi-unlink"></i></button>
+                        </form>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="card shadow-sm mt-3">
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-4">
+              <div class="fw-bold h4 text-primary"><%= (consultants || []).length %></div>
+              <div class="small text-muted">مستشار</div>
+            </div>
+            <div class="col-4">
+              <div class="fw-bold h4 text-info"><%= (categories || []).length %></div>
+              <div class="small text-muted">قسم</div>
+            </div>
+            <div class="col-4">
+              <div class="fw-bold h4 text-success"><%= (links || []).length %></div>
+              <div class="small text-muted">رابط</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

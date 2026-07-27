@@ -1,0 +1,107 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-coin"></i> أسعار الاستشارات</h3>
+    <a href="/consultant" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-right"></i> رجوع</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header bg-white">
+      <h5 class="mb-0 fw-bold">حدد أسعارك لكل قسم</h5>
+    </div>
+    <div class="card-body">
+      <p class="text-muted">حدد السعر اللي يناسبك لكل تخصص. العميل يدفع السعر اللي تحدده، والمنصة تأخذ 25% والباقي لك.</p>
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>القسم</th>
+              <th>الاستشارة الكتابية</th>
+              <th>المكالمة الصوتية</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% categories.forEach(cat => { %>
+              <tr>
+                <td>
+                  <i class="bi <%= cat.icon %>"></i>
+                  <strong><%= cat.name_ar %></strong>
+                </td>
+                <td>
+                  <form action="/consultant/pricing" method="POST" class="d-flex gap-1 align-items-center flex-wrap">
+                    <input type="hidden" name="category_id" value="<%= cat.id %>">
+                    <input type="number" name="price" class="form-control form-control-sm" style="width:80px" min="10" step="10"
+                      value="<%= cat.price || '' %>" placeholder="سعر">
+                    <button type="submit" name="action" value="save" class="btn btn-primary btn-sm p-1">
+                      <i class="bi bi-check"></i>
+                    </button>
+                    <% if (cat.price) { %>
+                      <button type="submit" name="action" value="remove" class="btn btn-outline-danger btn-sm p-1"
+                        onclick="return confirm('إلغاء الاشتراك في هذا القسم؟')">
+                        <i class="bi bi-x"></i>
+                      </button>
+                    <% } %>
+                    <% if (cat.price) { %>
+                      <span class="fw-bold text-primary small"><%= cat.price %> ر.س</span>
+                    <% } else { %>
+                      <span class="text-muted small">غير مشترك</span>
+                    <% } %>
+                  </form>
+                </td>
+                <td>
+                  <form action="/consultant/pricing" method="POST" class="d-flex gap-1 align-items-center flex-wrap">
+                    <input type="hidden" name="category_id" value="<%= cat.id %>">
+                    <input type="hidden" name="type" value="voice">
+                    <input type="hidden" name="action" value="">
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox" name="voice_enabled" value="1" id="voice_<%= cat.id %>"
+                        <%= cat.voice_enabled ? 'checked' : '' %>
+                        onchange="this.closest('form').querySelector('[name=action]').value='voice_toggle'; this.closest('form').submit();">
+                      <label class="form-check-label small" for="voice_<%= cat.id %>"><%= cat.voice_enabled ? '✅' : '❌' %></label>
+                    </div>
+                    <% if (cat.voice_enabled) { %>
+                      <div class="input-group input-group-sm" style="width:110px">
+                        <input type="number" name="voice_price_per_min" class="form-control form-control-sm" 
+                          value="<%= cat.voice_price_per_minute || 5 %>" min="1" step="1" style="width:50px">
+                        <span class="input-group-text p-1" style="font-size:0.7rem;">ر.س/د</span>
+                        <button type="submit" name="action" value="voice_price" class="btn btn-sm btn-outline-primary p-1">
+                          <i class="bi bi-check"></i>
+                        </button>
+                      </div>
+                    <% } %>
+                  </form>
+                </td>
+                <td>
+                  <% if (cat.price) { %>
+                    <small class="text-muted d-block">ربحك: <%= Math.round((cat.price || 0) * 0.75) %> ر.س</small>
+                  <% } %>
+                  <% if (cat.voice_enabled && cat.voice_price_per_minute) { %>
+                    <small class="text-success d-block">صوتي: <%= Math.round(cat.voice_price_per_minute * 0.75) %> ر.س/د</small>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-light mt-3 p-3">
+    <div class="row text-center">
+      <div class="col-4">
+        <div class="fw-bold text-primary h4"><%= categories.filter(c => c.price).length %></div>
+        <div class="small text-muted">أقسام نشطة</div>
+      </div>
+      <div class="col-4">
+        <div class="fw-bold text-success h4">25%</div>
+        <div class="small text-muted">عمولة المنصة</div>
+      </div>
+      <div class="col-4">
+        <div class="fw-bold text-success h4">75%</div>
+        <div class="small text-muted">نصيبك</div>
+      </div>
+    </div>
+  </div>
+</div>

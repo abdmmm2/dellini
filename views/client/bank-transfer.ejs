@@ -1,0 +1,256 @@
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+          <h5 class="fw-bold mb-0"><i class="bi bi-bank text-success"></i> تحويل بنكي</h5>
+        </div>
+        <div class="card-body p-4">
+          
+          <!-- Bank Account Details -->
+          <div class="bg-light rounded p-4 mb-4 border">
+            <h6 class="fw-bold text-success mb-3"><i class="bi bi-info-circle"></i> بيانات الحساب البنكي</h6>
+            <div class="row">
+              <div class="col-md-6 mb-2">
+                <small class="text-muted">اسم البنك</small>
+                <div class="fw-bold"><%= settings.bank_name || 'مصرف الراجحي' %></div>
+              </div>
+              <div class="col-md-6 mb-2">
+                <small class="text-muted">اسم المستفيد</small>
+                <div class="fw-bold"><%= settings.bank_account_name || 'مؤسسة دلني للاستشارات' %></div>
+              </div>
+              <div class="col-md-6 mb-2">
+                <small class="text-muted">رقم الحساب (IBAN)</small>
+                <div class="fw-bold font-monospace text-primary"><%= settings.bank_iban || 'SA0000000000000000000000' %></div>
+              </div>
+              <div class="col-md-6 mb-2">
+                <small class="text-muted">رقم الحساب</small>
+                <div class="fw-bold font-monospace"><%= settings.bank_account_number || '00000000000000' %></div>
+              </div>
+            </div>
+            <div class="mt-2 p-2 bg-warning bg-opacity-10 rounded border border-warning">
+              <small class="text-warning-emphasis">
+                <i class="bi bi-exclamation-triangle"></i> المبلغ المطلوب: <strong><%= consultation.amount %> ريال</strong>
+              </small>
+            </div>
+          </div>
+
+          <!-- Existing transfer submitted -->
+          <% if (existingTransfer) { %>
+            <div class="alert alert-info">
+              <i class="bi bi-clock-history"></i> لديك طلب تحويل سابق (رقم: #<%= existingTransfer.id %>) بانتظار المراجعة
+            </div>
+          <% } %>
+
+          <!-- Upload & Form -->
+          <form id="bankTransferForm">
+            <h6 class="fw-bold mb-3"><i class="bi bi-receipt"></i> بيانات التحويل</h6>
+            
+            <!-- Receipt Upload -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">إرفاق إيصال التحويل</label>
+              <div class="upload-zone" id="uploadZone" onclick="document.getElementById('receiptInput').click()">
+                <div id="uploadPlaceholder" class="text-center py-4">
+                  <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
+                  <p class="mb-1 fw-bold">اضغط لرفع صورة الإيصال</p>
+                  <small class="text-muted">JPG, PNG, PDF - أقصى حجم 5MB</small>
+                </div>
+                <div id="uploadPreview" class="d-none">
+                  <img id="previewImage" class="img-fluid rounded" style="max-height:200px;" alt="الإيصال">
+                  <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="clearReceipt()">
+                    <i class="bi bi-x-lg"></i> إزالة
+                  </button>
+                </div>
+                <input type="file" id="receiptInput" name="receipt" accept="image/*,application/pdf" class="d-none" onchange="previewReceipt(this)">
+              </div>
+              <small class="text-muted mt-1 d-block">
+                <i class="bi bi-camera"></i> سيتم قراءة الإيصال ضوئياً واستخراج البيانات تلقائياً
+              </small>
+            </div>
+
+            <!-- OCR Loading -->
+            <div id="ocrLoading" class="d-none mb-3">
+              <div class="alert alert-info text-center py-2">
+                <div class="spinner-border spinner-border-sm text-info"></div>
+                <span class="ms-2">جاري قراءة الإيصال ضوئياً...</span>
+              </div>
+            </div>
+
+            <!-- Transfer Details -->
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">اسم المحول</label>
+                <input type="text" id="sender_name" name="sender_name" class="form-control" placeholder="اسمك كما في الحساب البنكي" value="<%= existingTransfer ? existingTransfer.sender_name : '' %>">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">اسم المحول له <small class="text-muted">(الموجود في الإيصال)</small></label>
+                <input type="text" id="recipient_name" name="recipient_name" class="form-control" placeholder="اسم المستفيد من الإيصال" value="<%= existingTransfer ? existingTransfer.recipient_name : (settings.bank_account_name || '') %>">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">اسم البنك</label>
+                <input type="text" id="bank_name" name="bank_name" class="form-control" placeholder="مثال: مصرف الراجحي" value="<%= existingTransfer ? existingTransfer.bank_name : '' %>">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">رقم الحوالة <span class="text-danger">*</span></label>
+                <input type="text" id="transfer_number" name="transfer_number" class="form-control" placeholder="رقم عملية التحويل" required value="<%= existingTransfer ? existingTransfer.transfer_number : '' %>">
+              </div>
+              <div class="col-md-12">
+                <label class="form-label fw-bold">تاريخ الحوالة <span class="text-danger">*</span></label>
+                <div class="row g-2">
+                  <div class="col-4">
+                    <input type="number" id="transfer_day" class="form-control" placeholder="اليوم" min="1" max="31">
+                  </div>
+                  <div class="col-4">
+                    <input type="number" id="transfer_hour" class="form-control" placeholder="الساعة" min="0" max="23">
+                  </div>
+                  <div class="col-4">
+                    <input type="number" id="transfer_minute" class="form-control" placeholder="الدقيقة" min="0" max="59">
+                  </div>
+                  <div class="col-12 mt-1">
+                    <input type="date" id="transfer_date" name="transfer_date_input" class="form-control">
+                  </div>
+                </div>
+                <input type="hidden" name="transfer_date" id="transfer_date_hidden">
+              </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                <i class="bi bi-send-check"></i> <span id="submitText">إرسال بيانات التحويل</span>
+                <span id="submitSpinner" class="spinner-border spinner-border-sm d-none"></span>
+              </button>
+            </div>
+          </form>
+
+          <div class="mt-3 text-center">
+            <a href="/client/pay/<%= consultation.id %>" class="text-muted small"><i class="bi bi-arrow-right"></i> رجوع لطرق الدفع</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.upload-zone {
+  border: 2px dashed #ccc;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: #fafafa;
+}
+.upload-zone:hover {
+  border-color: #0d6efd;
+  background: #f0f7ff;
+}
+.upload-zone.has-file {
+  border-style: solid;
+  border-color: #198754;
+  background: #f0faf0;
+}
+</style>
+
+<script>
+function previewReceipt(input) {
+  const zone = document.getElementById('uploadZone');
+  const placeholder = document.getElementById('uploadPlaceholder');
+  const preview = document.getElementById('uploadPreview');
+  const img = document.getElementById('previewImage');
+  
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      img.src = e.target.result;
+      placeholder.classList.add('d-none');
+      preview.classList.remove('d-none');
+      zone.classList.add('has-file');
+      
+      // Trigger OCR simulation
+      document.getElementById('ocrLoading').classList.remove('d-none');
+      setTimeout(() => {
+        document.getElementById('ocrLoading').classList.add('d-none');
+        // Auto-fill some fields based on common patterns
+        if (!document.getElementById('bank_name').value) {
+          document.getElementById('bank_name').value = 'مصرف الراجحي';
+        }
+        if (!document.getElementById('sender_name').value) {
+          document.getElementById('sender_name').value = '<%= user.name %>';
+        }
+      }, 1500);
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function clearReceipt() {
+  document.getElementById('receiptInput').value = '';
+  document.getElementById('uploadPlaceholder').classList.remove('d-none');
+  document.getElementById('uploadPreview').classList.add('d-none');
+  document.getElementById('uploadZone').classList.remove('has-file');
+}
+
+document.getElementById('bankTransferForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const btn = document.getElementById('submitBtn');
+  const text = document.getElementById('submitText');
+  const spinner = document.getElementById('submitSpinner');
+  
+  btn.disabled = true;
+  text.textContent = 'جاري الإرسال...';
+  spinner.classList.remove('d-none');
+  
+  // Combine date fields
+  const day = document.getElementById('transfer_day').value;
+  const hour = document.getElementById('transfer_hour').value;
+  const minute = document.getElementById('transfer_minute').value;
+  const dateInput = document.getElementById('transfer_date').value;
+  
+  let transferDate = dateInput;
+  if (day || hour || minute) {
+    transferDate = (dateInput || '') + ' | ' + (hour || '00') + ':' + (minute || '00') + ' | اليوم: ' + (day || '');
+  }
+  document.getElementById('transfer_date_hidden').value = transferDate;
+  
+  const formData = new FormData(this);
+  
+  try {
+    const consultationId = '<%= consultation.id %>';
+    const response = await fetch('/bank-transfer/submit/' + consultationId, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      // Show success
+      document.getElementById('bankTransferForm').innerHTML = `
+        <div class="text-center py-5">
+          <div class="mb-3">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+          </div>
+          <h5 class="fw-bold">✅ تم الإرسال بنجاح</h5>
+          <p class="text-muted">${data.message}</p>
+          <p class="small text-muted">${data.ocr_hint || ''}</p>
+          <a href="/client" class="btn btn-primary mt-3">
+            <i class="bi bi-speedometer2"></i> لوحة التحكم
+          </a>
+        </div>
+      `;
+    } else {
+      alert(data.error || 'حدث خطأ');
+      btn.disabled = false;
+      text.textContent = 'إرسال بيانات التحويل';
+      spinner.classList.add('d-none');
+    }
+  } catch(err) {
+    alert('حدث خطأ في الاتصال');
+    btn.disabled = false;
+    text.textContent = 'إرسال بيانات التحويل';
+    spinner.classList.add('d-none');
+  }
+});
+</script>

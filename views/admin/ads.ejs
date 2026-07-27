@@ -1,0 +1,217 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-megaphone"></i> إدارة الإعلانات</h3>
+    <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-right"></i> رجوع</a>
+  </div>
+
+  <% if (success_msg) { %>
+    <div class="alert alert-success alert-dismissible fade show"><%= success_msg %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  <% } %>
+  <% if (error_msg) { %>
+    <div class="alert alert-danger alert-dismissible fade show"><%= error_msg %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+  <% } %>
+
+  <!-- Add Ad -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+      <h5 class="fw-bold mb-0"><i class="bi bi-plus-circle"></i> إعلان جديد</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="/admin/ads/add" enctype="multipart/form-data">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">عنوان الإعلان *</label>
+            <input type="text" name="title" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">رابط الإعلان</label>
+            <input type="text" name="link_url" class="form-control" placeholder="/client/new" value="/client/new">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">الوصف</label>
+            <input type="text" name="description" class="form-control" placeholder="وصف قصير للإعلان">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">لون الخلفية <small class="text-muted">(إن لم ترفع صورة)</small></label>
+            <input type="color" name="bg_color" class="form-control form-control-color" value="#6f42c1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">الترتيب</label>
+            <input type="number" name="sort_order" class="form-control" value="0">
+          </div>
+          <div class="col-12">
+            <label class="form-label">صورة الإعلان <small class="text-muted">(JPG, PNG, GIF متحركة, WEBP, SVG — حد 5MB)</small></label>
+            <input type="file" name="ad_image" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml">
+            <div class="form-text">ادعم رفع الصور الثابتة والمتحركة (GIF). إذا ما رفعت صورة، بيتم استخدام اللون كخلفية.</div>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> حفظ الإعلان</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Ads List -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0"><i class="bi bi-list"></i> الإعلانات <span class="badge bg-primary ms-2"><%= ads.length %></span></h5>
+      <small class="text-muted">اسحب لليمين لمعاينة GIF</small>
+    </div>
+    <div class="card-body p-0">
+      <% if (ads.length === 0) { %>
+        <div class="text-center py-5">
+          <i class="bi bi-megaphone" style="font-size: 3rem; color: #dee2e6;"></i>
+          <p class="text-muted mt-2">لا توجد إعلانات بعد</p>
+        </div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الإعلان</th>
+                <th>المعاينة</th>
+                <th>النقرات</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% ads.forEach((ad, i) => { %>
+                <% const isImage = ad.image_url && ad.image_url.startsWith('/uploads/'); %>
+                <% const isGif = isImage && ad.image_url.endsWith('.gif'); %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <td>
+                    <strong><%= ad.title %></strong>
+                    <div class="small text-muted"><%= ad.description %></div>
+                    <div class="small text-muted"><%= ad.link_url %></div>
+                    <div class="small text-muted">الترتيب: <%= ad.sort_order || 0 %></div>
+                  </td>
+                  <td style="min-width:120px">
+                    <% if (isImage) { %>
+                      <div style="width:100px;height:60px;border-radius:10px;overflow:hidden;border:1px solid #dee2e6;background:#f8f9fa;display:flex;align-items:center;justify-content:center;">
+                        <img src="<%= ad.image_url %>" style="width:100%;height:100%;object-fit:cover;" alt="<%= ad.title %>">
+                      </div>
+                      <% if (isGif) { %><span class="badge bg-danger mt-1" style="font-size:0.6rem">GIF</span><% } %>
+                    <% } else { %>
+                      <div style="width:100px;height:60px;border-radius:10px;background:<%= ad.image_url || '#6f42c1' %>;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-megaphone text-white fs-4"></i>
+                      </div>
+                    <% } %>
+                  </td>
+                  <td><span class="badge bg-info"><%= ad.clicks || 0 %></span></td>
+                  <td>
+                    <span class="badge bg-<%= ad.is_active ? 'success' : 'secondary' %>">
+                      <%= ad.is_active ? 'نشط' : 'متوقف' %>
+                    </span>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-primary mb-1" onclick="editAd(<%= ad.id %>, '<%= ad.title.replace(/'/g, "\\'") %>', '<%= (ad.description || "").replace(/'/g, "\\'") %>', '<%= ad.image_url || "" %>', '<%= ad.link_url || "" %>', <%= ad.sort_order || 0 %>, <%= ad.is_active %>)">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <form method="POST" action="/admin/ads/delete" style="display:inline" onsubmit="return confirm('حذف الإعلان؟')">
+                      <input type="hidden" name="id" value="<%= ad.id %>">
+                      <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="/admin/ads/edit" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="fw-bold"><i class="bi bi-pencil"></i> تعديل الإعلان</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" id="editId">
+          <input type="hidden" name="existing_image" id="editExistingImage">
+          
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">العنوان</label>
+              <input type="text" name="title" id="editTitle" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">الرابط</label>
+              <input type="text" name="link_url" id="editLink" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">الوصف</label>
+              <input type="text" name="description" id="editDesc" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">لون الخلفية</label>
+              <input type="color" name="bg_color" id="editColor" class="form-control form-control-color">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">الترتيب</label>
+              <input type="number" name="sort_order" id="editSort" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">الحالة</label>
+              <select name="is_active" id="editActive" class="form-select">
+                <option value="1">نشط</option>
+                <option value="0">متوقف</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">تغيير الصورة <small class="text-muted">(اتركه فارغاً للإبقاء على الصورة الحالية)</small></label>
+              <input type="file" name="ad_image" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml">
+            </div>
+            <div class="col-12" id="editPreviewContainer" style="display:none">
+              <label class="form-label">الصورة الحالية:</label>
+              <div id="editPreview"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> حفظ التغييرات</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function editAd(id, title, desc, image, link, sort, active) {
+  document.getElementById('editId').value = id;
+  document.getElementById('editTitle').value = title;
+  document.getElementById('editDesc').value = desc;
+  document.getElementById('editExistingImage').value = image;
+  document.getElementById('editLink').value = link;
+  document.getElementById('editSort').value = sort;
+  document.getElementById('editActive').value = active;
+  
+  // Check if current image is an uploaded file
+  const isImage = image && image.startsWith('/uploads/');
+  const preview = document.getElementById('editPreview');
+  const container = document.getElementById('editPreviewContainer');
+  
+  if (isImage) {
+    const isGif = image.endsWith('.gif');
+    preview.innerHTML = '<div style="width:150px;height:90px;border-radius:10px;overflow:hidden;border:1px solid #dee2e6;">' +
+      '<img src="' + image + '" style="width:100%;height:100%;object-fit:cover;" alt="' + title + '">' +
+      '</div>' + (isGif ? ' <span class="badge bg-danger">GIF متحركة</span>' : '');
+    container.style.display = 'block';
+    document.getElementById('editColor').value = '#6f42c1';
+  } else {
+    container.style.display = 'none';
+    document.getElementById('editColor').value = image || '#6f42c1';
+  }
+  
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+</script>

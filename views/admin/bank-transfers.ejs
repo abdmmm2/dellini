@@ -1,0 +1,183 @@
+<div class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-bank text-success"></i> التحويلات البنكية</h3>
+    <div class="d-flex gap-2">
+      <select id="statusFilter" class="form-select form-select-sm" style="width:auto;" onchange="filterTransfers()">
+        <option value="all">الكل</option>
+        <option value="pending" selected>بانتظار المراجعة</option>
+        <option value="verified">مقبولة</option>
+        <option value="rejected">مرفوضة</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <% if (transfers.length === 0) { %>
+        <div class="text-center py-5">
+          <i class="bi bi-inbox" style="font-size:3rem;color:#dee2e6;"></i>
+          <p class="text-muted mt-2">لا توجد تحويلات بنكية</p>
+        </div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>العميل</th>
+                <th>الاستشارة</th>
+                <th>المبلغ</th>
+                <th>رقم الحوالة</th>
+                <th>البنك</th>
+                <th>المحول</th>
+                <th>الإيصال</th>
+                <th>التاريخ</th>
+                <th>الحالة</th>
+                <th>إجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% transfers.forEach(t => { %>
+                <tr class="transfer-row" data-status="<%= t.status %>">
+                  <td><%= t.id %></td>
+                  <td><%= t.client_name || '—' %></td>
+                  <td><a href="/admin/consultations" class="text-primary">#<%= t.consultation_id %></a></td>
+                  <td class="fw-bold"><%= t.amount || '—' %> ريال</td>
+                  <td class="font-monospace"><%= t.transfer_number || '—' %></td>
+                  <td><%= t.bank_name || '—' %></td>
+                  <td><%= t.sender_name || '—' %></td>
+                  <td>
+                    <% if (t.receipt_image) { %>
+                      <a href="<%= t.receipt_image %>" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> عرض
+                      </a>
+                    <% } else { %>
+                      <span class="text-muted">—</span>
+                    <% } %>
+                  </td>
+                  <td class="small"><%= new Date(t.created_at).toLocaleDateString('ar-SA') %></td>
+                  <td>
+                    <% if (t.status === 'pending') { %>
+                      <span class="badge bg-warning text-dark">بانتظار المراجعة</span>
+                    <% } else if (t.status === 'verified') { %>
+                      <span class="badge bg-success">✅ مقبولة</span>
+                    <% } else { %>
+                      <span class="badge bg-danger">❌ مرفوضة</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (t.status === 'pending') { %>
+                      <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-success" onclick="verifyTransfer(<%= t.id %>, <%= t.consultation_id %>)">
+                          <i class="bi bi-check-lg"></i> قبول
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="rejectTransfer(<%= t.id %>)">
+                          <i class="bi bi-x-lg"></i> رفض
+                        </button>
+                      </div>
+                    <% } else { %>
+                      <small class="text-muted">
+                        <%= t.verified_by_name ? 'بواسطة: ' + t.verified_by_name : '' %>
+                      </small>
+                    <% } %>
+                  </td>
+                </tr>
+                <!-- OCR Data Row (collapsible) -->
+                <% if (t.ocr_data && t.ocr_data !== 'null') { %>
+                  <tr class="ocr-row" style="display:none;">
+                    <td colspan="11">
+                      <div class="p-3 bg-light">
+                        <small class="text-muted fw-bold"><i class="bi bi-camera"></i> بيانات القراءة الضوئية:</small>
+                        <pre class="mb-0 mt-1 small" style="white-space:pre-wrap;font-size:0.75rem;"><%= JSON.stringify(JSON.parse(t.ocr_data), null, 2) %></pre>
+                      </div>
+                    </td>
+                  </tr>
+                <% } %>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="fw-bold text-danger"><i class="bi bi-exclamation-triangle"></i> رفض التحويل البنكي</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="rejectForm" method="POST">
+        <div class="modal-body">
+          <label class="form-label fw-bold">سبب الرفض</label>
+          <textarea name="admin_note" class="form-control" rows="3" placeholder="اذكر سبب الرفض..." required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger"><i class="bi bi-x-lg"></i> تأكيد الرفض</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterTransfers() {
+  const filter = document.getElementById('statusFilter').value;
+  document.querySelectorAll('.transfer-row').forEach(row => {
+    if (filter === 'all' || row.dataset.status === filter) {
+      row.style.display = '';
+      const nextRow = row.nextElementSibling;
+      if (nextRow && nextRow.classList.contains('ocr-row')) {
+        nextRow.style.display = '';
+      }
+    } else {
+      row.style.display = 'none';
+      const nextRow = row.nextElementSibling;
+      if (nextRow && nextRow.classList.contains('ocr-row')) {
+        nextRow.style.display = 'none';
+      }
+    }
+  });
+}
+
+async function verifyTransfer(transferId, consultationId) {
+  if (!confirm('تأكيد قبول التحويل البنكي؟')) return;
+  
+  try {
+    const response = await fetch('/admin/bank-transfer/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transfer_id: transferId, consultation_id: consultationId, status: 'verified' })
+    });
+    const data = await response.json();
+    if (data.success) location.reload();
+    else alert(data.error);
+  } catch(e) {
+    alert('حدث خطأ');
+  }
+}
+
+function rejectTransfer(transferId) {
+  const form = document.getElementById('rejectForm');
+  form.action = '/admin/bank-transfer/reject';
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = 'transfer_id';
+  input.value = transferId;
+  form.appendChild(input);
+  new bootstrap.Modal(document.getElementById('rejectModal')).show();
+}
+
+// Toggle OCR data rows
+document.querySelectorAll('.transfer-row td:first-child').forEach(td => {
+  td.addEventListener('dblclick', function() {
+    const nextRow = this.closest('tr').nextElementSibling;
+    if (nextRow && nextRow.classList.contains('ocr-row')) {
+      nextRow.style.display = nextRow.style.display === 'none' ? '' : 'none';
+    }
+  });
+});
+</script>

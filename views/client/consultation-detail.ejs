@@ -1,0 +1,144 @@
+<div class="container py-4">
+  <a href="/client" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-right"></i> رجوع</a>
+
+  <div class="row">
+    <!-- Consultation Info -->
+    <div class="col-lg-4 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h6 class="fw-bold mb-0"><i class="bi bi-info-circle"></i> معلومات الاستشارة</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <span class="text-muted small">رقم الطلب</span>
+            <div class="fw-bold">#<%= consultation.id %> <% if (consultation.is_urgent) { %><span class="badge bg-danger me-1"><i class="bi bi-lightning-charge"></i> عاجل</span><% } %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">القسم</span>
+            <div><span class="badge bg-info"><%= consultation.category_name %></span></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">المستشار</span>
+            <div class="fw-bold"><%= consultation.consultant_name || '—' %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">المبلغ</span>
+            <div class="fw-bold"><%= consultation.amount %> ريال</div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">الحالة</span>
+            <div>
+              <% const statusMap = {'draft':'مسودة','pending_payment':'بانتظار الدفع','paid':'مدفوعة','assigned':'محوّلة','answered':'تم الرد','closed':'مغلقة','cancelled':'ملغية'}; %>
+              <% const colorMap = {'draft':'secondary','pending_payment':'warning','paid':'success','assigned':'info','answered':'primary','closed':'secondary','cancelled':'danger'}; %>
+              <span class="badge bg-<%= colorMap[consultation.status] %>"><%= statusMap[consultation.status] %></span>
+            </div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">التاريخ</span>
+            <div><%= new Date(consultation.created_at).toLocaleDateString('ar-SA') %></div>
+          </div>
+          <% if (consultation.type === 'voice') { %>
+          <hr>
+          <div class="mb-2">
+            <span class="text-muted small">نوع الخدمة</span>
+            <div><span class="badge bg-primary"><i class="bi bi-telephone"></i> مكالمة صوتية</span></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">المدة</span>
+            <div class="fw-bold"><%= consultation.duration_minutes %> دقيقة</div>
+          </div>
+          <% if (['assigned','paid','answered'].includes(consultation.status)) { %>
+          <a href="/call/<%= consultation.id %>" class="btn btn-success w-100 mt-2" target="_blank">
+            <i class="bi bi-telephone-fill"></i> بدء المكالمة
+          </a>
+          <% } %>
+          <% } %>
+          <hr>
+          <div class="mb-2">
+            <span class="text-muted small">السؤال</span>
+            <p class="mt-1"><%= consultation.question %></p>
+          </div>
+
+          <% if (consultation.status === 'answered' && !consultation.rating) { %>
+            <hr>
+            <form action="/client/close/<%= consultation.id %>" method="POST">
+              <label class="fw-bold small">تقييم المستشار</label>
+              <div class="mb-2">
+                <select name="rating" class="form-select form-select-sm" required>
+                  <option value="">اختر التقييم</option>
+                  <option value="1">★☆☆☆☆</option>
+                  <option value="2">★★☆☆☆</option>
+                  <option value="3">★★★☆☆</option>
+                  <option value="4">★★★★☆</option>
+                  <option value="5">★★★★★</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <textarea name="rating_comment" class="form-control form-control-sm" rows="2" placeholder="تعليق (اختياري)"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm w-100">
+                <i class="bi bi-check2"></i> إغلاق الاستشارة وتقييم
+              </button>
+            </form>
+          <% } else if (consultation.rating) { %>
+            <hr>
+            <label class="fw-bold small">تقييمك</label>
+            <div class="mt-1">
+              <% for (let i = 0; i < 5; i++) { %>
+                <i class="bi bi-star<%= i < consultation.rating ? '-fill text-warning' : '' %>"></i>
+              <% } %>
+            </div>
+            <% if (consultation.rating_comment) { %>
+              <p class="small text-muted mt-1"><%= consultation.rating_comment %></p>
+            <% } %>
+          <% } %>
+
+          <% if (consultation.status === 'pending_payment') { %>
+            <a href="/client/pay/<%= consultation.id %>" class="btn btn-success w-100 mt-3">
+              <i class="bi bi-credit-card"></i> إتمام الدفع
+            </a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="col-lg-8 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold mb-0"><i class="bi bi-chat-dots"></i> الرسائل</h6>
+          <span class="badge bg-primary"><%= messages.length %> رسالة</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="chat-box" id="chatMessages">
+            <% if (messages.length === 0) { %>
+              <div class="text-center py-5 text-muted">
+                <i class="bi bi-chat-square-text" style="font-size: 2rem;"></i>
+                <p class="mt-2">لا توجد رسائل بعد</p>
+              </div>
+            <% } else { %>
+              <% messages.forEach(m => { %>
+                <div class="message-bubble <%= m.sender_role === 'client' ? 'message-client' : 'message-consultant' %>">
+                  <div class="fw-bold small mb-1"><%= m.sender_name %></div>
+                  <div><%= m.message %></div>
+                  <div class="message-time"><%= new Date(m.created_at).toLocaleString('ar-SA') %></div>
+                </div>
+              <% }) %>
+            <% } %>
+          </div>
+        </div>
+        <% if (consultation.status !== 'closed' && consultation.status !== 'draft' && consultation.status !== 'pending_payment') { %>
+          <div class="card-footer bg-white">
+            <div class="input-group">
+              <input type="text" id="messageInput" class="form-control" placeholder="اكتب رسالتك...">
+              <button class="btn btn-primary" id="sendBtn" onclick="sendMessage(<%= consultation.id %>)">
+                <i class="bi bi-send"></i> إرسال
+              </button>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+<script>scrollChat();</script>

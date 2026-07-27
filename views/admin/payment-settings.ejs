@@ -1,0 +1,301 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-gear"></i> إعدادات الدفع</h3>
+    <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-right"></i> رجوع</a>
+  </div>
+
+  <form action="/admin/payment-settings" method="POST">
+    <!-- ====================== BOOLEAN: Stripe / Credit Card ====================== -->
+    <div class="card shadow-sm mb-4 border-<%= settings.stripe_enabled === '0' ? 'secondary' : 'primary' %>">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-credit-card text-primary"></i> بطاقة ائتمان (Stripe)
+        </h5>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" name="stripe_enabled" value="1" id="stripeToggle"
+            <%= settings.stripe_enabled !== '0' ? 'checked' : '' %> onchange="toggleGateway(this, 'stripeSection')">
+          <label class="form-check-label fw-bold" for="stripeToggle">
+            <span id="stripeLabel"><%= settings.stripe_enabled !== '0' ? '✅ مفعل' : '❌ معطل' %></span>
+          </label>
+        </div>
+      </div>
+      <div class="card-body" id="stripeSection" style="<%= settings.stripe_enabled === '0' ? 'opacity:0.5;pointer-events:none;' : '' %>">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">مفتاح النشر (Publishable Key)</label>
+            <input type="text" name="stripe_publishable_key" class="form-control" value="<%= settings.stripe_publishable_key || '' %>" placeholder="pk_test_...">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">المفتاح السري (Secret Key)</label>
+            <input type="text" name="stripe_secret_key" class="form-control" value="<%= settings.stripe_secret_key || '' %>" placeholder="sk_test_...">
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">مفتاح Webhook</label>
+            <input type="text" name="stripe_webhook_secret" class="form-control" value="<%= settings.stripe_webhook_secret || '' %>" placeholder="whsec_...">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">الوضع</label>
+            <select name="stripe_mode" class="form-select">
+              <option value="test" <%= (settings.stripe_mode || 'test') === 'test' ? 'selected' : '' %>>🔬 تجريبي (Sandbox)</option>
+              <option value="live" <%= settings.stripe_mode === 'live' ? 'selected' : '' %>>🔴 فعلي (Live)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================== BOOLEAN: STC Pay ====================== -->
+    <div class="card shadow-sm mb-4 border-<%= settings.stcpay_enabled === '0' ? 'secondary' : 'success' %>">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-phone text-success"></i> STC Pay
+        </h5>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" name="stcpay_enabled" value="1" id="stcpayToggle"
+            <%= settings.stcpay_enabled !== '0' ? 'checked' : '' %> onchange="toggleGateway(this, 'stcpaySection')">
+          <label class="form-check-label fw-bold" for="stcpayToggle">
+            <span id="stcpayLabel"><%= settings.stcpay_enabled !== '0' ? '✅ مفعل' : '❌ معطل' %></span>
+          </label>
+        </div>
+      </div>
+      <div class="card-body" id="stcpaySection" style="<%= settings.stcpay_enabled === '0' ? 'opacity:0.5;pointer-events:none;' : '' %>">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">رقم التاجر (Merchant ID)</label>
+            <input type="text" name="stcpay_merchant_id" class="form-control" value="<%= settings.stcpay_merchant_id || process.env.STCPAY_MERCHANT_ID || '' %>" placeholder="DELLINI_MERCHANT">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">مفتاح API</label>
+            <input type="text" name="stcpay_api_key" class="form-control" value="<%= settings.stcpay_api_key || process.env.STCPAY_API_KEY || '' %>" placeholder="test_key_dellini">
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">المفتاح السري (Secret Key)</label>
+            <input type="text" name="stcpay_secret_key" class="form-control" value="<%= settings.stcpay_secret_key || process.env.STCPAY_SECRET_KEY || '' %>" placeholder="test_secret_dellini">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">الوضع</label>
+            <select name="stcpay_mode" class="form-select">
+              <option value="test" <%= (settings.stcpay_mode || 'test') === 'test' ? 'selected' : '' %>>🔬 تجريبي (Sandbox)</option>
+              <option value="live" <%= settings.stcpay_mode === 'live' ? 'selected' : '' %>>🔴 فعلي (Live)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================== BOOLEAN: Bank Transfer ====================== -->
+    <div class="card shadow-sm mb-4 border-<%= settings.bank_transfer_enabled === '0' ? 'secondary' : 'success' %>">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-bank text-success"></i> التحويل البنكي
+        </h5>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" name="bank_transfer_enabled" value="1" id="bankToggle"
+            <%= settings.bank_transfer_enabled !== '0' ? 'checked' : '' %> onchange="toggleGateway(this, 'bankSection')">
+          <label class="form-check-label fw-bold" for="bankToggle">
+            <span id="bankLabel"><%= settings.bank_transfer_enabled !== '0' ? '✅ مفعل' : '❌ معطل' %></span>
+          </label>
+        </div>
+      </div>
+      <div class="card-body" id="bankSection" style="<%= settings.bank_transfer_enabled === '0' ? 'opacity:0.5;pointer-events:none;' : '' %>">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">اسم البنك</label>
+            <input type="text" name="bank_name" class="form-control" value="<%= settings.bank_name || 'مصرف الراجحي' %>" placeholder="مثال: مصرف الراجحي">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">اسم صاحب الحساب</label>
+            <input type="text" name="bank_account_name" class="form-control" value="<%= settings.bank_account_name || 'مؤسسة دلني للاستشارات' %>" placeholder="اسم المستفيد">
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold">رقم الحساب (IBAN)</label>
+            <input type="text" name="bank_iban" class="form-control" value="<%= settings.bank_iban || 'SA0000000000000000000000' %>" placeholder="SA0000000000000000000000">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">رقم الحساب</label>
+            <input type="text" name="bank_account_number" class="form-control" value="<%= settings.bank_account_number || '00000000000000' %>">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">رمز السويفت (SWIFT)</label>
+            <input type="text" name="bank_swift" class="form-control" value="<%= settings.bank_swift || 'RJHISARI' %>" placeholder="مثال: RJHISARI">
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">أيام الانتظار (للتأكيد اليدوي)</label>
+            <input type="number" name="bank_transfer_wait_days" class="form-control" value="<%= settings.bank_transfer_wait_days || '1' %>" min="0" max="7">
+            <small class="text-muted">عدد أيام انتظار تأكيد التحويل من الإدارة</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Apple Pay Settings -->
+    <div class="card shadow-sm mb-4 border-<%= settings.applepay_enabled === '0' ? 'secondary' : 'dark' %>">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0"><i class="bi bi-apple text-dark"></i> Apple Pay</h5>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" name="applepay_enabled" value="1" id="applepayToggle"
+            <%= settings.applepay_enabled !== '0' ? 'checked' : '' %> onchange="toggleGateway(this, 'applepaySection')">
+          <label class="form-check-label fw-bold" for="applepayToggle">
+            <span id="applepayLabel"><%= settings.applepay_enabled !== '0' ? '✅ مفعل' : '❌ معطل' %></span>
+          </label>
+        </div>
+      </div>
+      <div class="card-body" id="applepaySection" style="<%= settings.applepay_enabled === '0' ? 'opacity:0.5;pointer-events:none;' : '' %>">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">معرف التاجر (Merchant ID)</label>
+            <input type="text" name="applepay_merchant_id" class="form-control" value="<%= settings.applepay_merchant_id || '' %>" placeholder="merchant.com.example">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">النطاق (Domain)</label>
+            <input type="text" name="applepay_domain" class="form-control" value="<%= settings.applepay_domain || '' %>" placeholder="dellini-platform.onrender.com">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- General Settings -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white">
+        <h5 class="fw-bold mb-0"><i class="bi bi-sliders"></i> الإعدادات العامة</h5>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold">الحد الأدنى لشحن المحفظة</label>
+            <div class="input-group">
+              <input type="number" name="min_wallet_charge" class="form-control" value="<%= settings.min_wallet_charge || '100' %>" min="10">
+              <span class="input-group-text">ريال</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">نسبة رسوم المنصة (%)</label>
+            <div class="input-group">
+              <input type="number" name="platform_fee_percent" class="form-control" value="<%= settings.platform_fee_percent || '20' %>" min="0" max="100" step="1">
+              <span class="input-group-text">%</span>
+            </div>
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <div class="form-text">نسبة المنصة من قيمة الاستشارة</div>
+          </div>
+        </div>
+        <!-- Simulated payment toggle -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="simulate_enabled" value="1" id="simulateToggle"
+                <%= settings.simulate_enabled !== '0' ? 'checked' : '' %>>
+              <label class="form-check-label fw-bold" for="simulateToggle">
+                تفعيل الدفع التجريبي (للاختبار)
+              </label>
+            </div>
+            <small class="text-muted">يظهر خيار الدفع التجريبي للعملاء</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================== VOICE CALL SETTINGS ====================== -->
+    <div class="card shadow-sm mb-4 border-<%= settings.voice_calls_enabled === '0' ? 'secondary' : 'primary' %>">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-telephone text-primary"></i> المكالمات الصوتية
+        </h5>
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input" type="checkbox" name="voice_calls_enabled" value="1" id="voiceToggle"
+            <%= settings.voice_calls_enabled !== '0' ? 'checked' : '' %> onchange="toggleGateway(this, 'voiceSection')">
+          <label class="form-check-label fw-bold" for="voiceToggle">
+            <span id="voiceLabel"><%= settings.voice_calls_enabled !== '0' ? '✅ مفعل' : '❌ معطل' %></span>
+          </label>
+        </div>
+      </div>
+      <div class="card-body" id="voiceSection" style="<%= settings.voice_calls_enabled === '0' ? 'opacity:0.5;pointer-events:none;' : '' %>">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i> المستشار يحدد سعر الدقيقة من صفحة التسعير الخاصة به. العميل يختار المدة ويدفع.
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label fw-bold">سعر الدقيقة الافتراضي</label>
+            <div class="input-group">
+              <input type="number" name="voice_default_price_per_min" class="form-control" value="<%= settings.voice_default_price_per_min || '5' %>" min="1" step="1">
+              <span class="input-group-text">ريال/دقيقة</span>
+            </div>
+            <small class="text-muted">السعر الافتراضي إذا ما حدد المستشار سعره</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">الحد الأدنى للمدة</label>
+            <div class="input-group">
+              <input type="number" name="voice_min_duration" class="form-control" value="<%= settings.voice_min_duration || '5' %>" min="1" max="60">
+              <span class="input-group-text">دقيقة</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">الحد الأقصى للمدة</label>
+            <div class="input-group">
+              <input type="number" name="voice_max_duration" class="form-control" value="<%= settings.voice_max_duration || '120' %>" min="10" max="300">
+              <span class="input-group-text">دقيقة</span>
+            </div>
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">مدة المكالمة القياسية (دقيقة)</label>
+            <div class="input-group">
+              <input type="number" name="voice_default_duration" class="form-control" value="<%= settings.voice_default_duration || '30' %>" min="5" max="120">
+              <span class="input-group-text">دقيقة</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">منصة المكالمات الصوتية</label>
+            <select name="voice_provider" class="form-select">
+              <option value="agora" <%= (settings.voice_provider || 'agora') === 'agora' ? 'selected' : '' %>>Agora.io (مقترح)</option>
+              <option value="twilio" <%= settings.voice_provider === 'twilio' ? 'selected' : '' %>>Twilio</option>
+              <option value="daily" <%= settings.voice_provider === 'daily' ? 'selected' : '' %>>Daily.co</option>
+              <option value="jitsi" <%= settings.voice_provider === 'jitsi' ? 'selected' : '' %>>Jitsi Meet (مجاني)</option>
+              <option value="placeholder" <%= settings.voice_provider === 'placeholder' ? 'selected' : '' %>>رابط خارجي (placeholder)</option>
+            </select>
+            <small class="text-muted">اختر المنصة اللي تستخدمها للمكالمات — حالياً وضع تجريبي</small>
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <label class="form-label fw-bold">معرف تطبيق المكالمات (App ID / API Key)</label>
+            <input type="text" name="voice_app_id" class="form-control" value="<%= settings.voice_app_id || '' %>" placeholder="أدخل App ID من Agora/Twilio/Daily.co">
+            <small class="text-muted">مطلوب عند تفعيل المكالمات الفعلية — حالياً المكالمة تجريبية (رابط)</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mb-4">
+      <button type="submit" class="btn btn-primary btn-lg px-5">
+        <i class="bi bi-check-lg"></i> حفظ الإعدادات
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+function toggleGateway(checkbox, sectionId) {
+  const section = document.getElementById(sectionId);
+  const label = document.getElementById(checkbox.id.replace('Toggle', 'Label'));
+  
+  if (checkbox.checked) {
+    section.style.opacity = '1';
+    section.style.pointerEvents = 'auto';
+    label.textContent = '✅ مفعل';
+  } else {
+    section.style.opacity = '0.5';
+    section.style.pointerEvents = 'none';
+    label.textContent = '❌ معطل';
+  }
+}
+</script>

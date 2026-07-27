@@ -1,0 +1,429 @@
+<!-- Hero Section - Raised Higher, clean -->
+<section class="hero" style="padding: 25px 0 35px !important;">
+  <div class="container text-center">
+    <div class="logo-3d-wrapper mx-auto mb-3">
+      <div class="logo-3d-inner">
+        <img src="/images/logo.png" alt="دلني" class="logo-3d-img">
+      </div>
+    </div>
+    <h1 class="mb-2 fw-bold" style="font-size: 2rem;">منصة دلني للاستشارات</h1>
+    <p class="lead mb-0" style="font-size:1rem;opacity:0.85">اربط مع مستشارين متخصصين في مجالات المال، الأسرة، القانون، التقنية والمزيد</p>
+  </div>
+</section>
+
+<!-- Ads Carousel - Below Hero (replaces old stats) -->
+<% if (ads && ads.length > 0) { %>
+<section class="container mt-2 mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="fw-bold mb-0">
+      <i class="bi bi-megaphone text-primary"></i> إعلانات مميزة
+    </h6>
+    <small class="text-muted">⬅ اسحب</small>
+  </div>
+  <div class="ads-carousel" id="adsCarousel">
+    <% const adIcons = ['bi-bank','bi-heart','bi-cash-coin','bi-laptop','bi-emoji-smile','bi-megaphone']; %>
+    <% ads.forEach((ad, i) => { %>
+      <% const isImg = ad.image_url && ad.image_url.startsWith('/uploads/'); %>
+      <% const isGif = isImg && ad.image_url.endsWith('.gif'); %>
+      <a href="<%= ad.link_url || '/' %>" class="ad-card<%= isGif ? ' ad-card-gif' : '' %>" onclick="trackAdClick(<%= ad.id %>)" style="<%= isImg ? '' : 'background: ' + (ad.image_url || '#6f42c1') %>; --ad-delay: <%= i * 0.15 %>s;" target="_blank">
+        <% if (isImg) { %>
+          <img src="<%= ad.image_url %>" class="ad-img" alt="<%= ad.title %>">
+        <% } else { %>
+          <div class="ad-icon">
+            <i class="bi <%= adIcons[i % adIcons.length] %>"></i>
+          </div>
+        <% } %>
+        <div class="ad-content">
+          <div class="ad-title"><%= ad.title %></div>
+          <div class="ad-desc"><%= ad.description %></div>
+        </div>
+        <div class="ad-arrow">
+          <i class="bi bi-chevron-left"></i>
+        </div>
+      </a>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
+<!-- Online Consultants -->
+<section class="container mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0">
+      <span class="online-dot"></span>
+      المستشارون المتصلون الآن
+      <span class="badge bg-success ms-1"><%= onlineConsultants.length %></span>
+    </h5>
+    <a href="/client/new" class="btn btn-outline-primary btn-sm">عرض الكل <i class="bi bi-arrow-left"></i></a>
+  </div>
+  <div class="online-consultants-carousel">
+    <% onlineConsultants.forEach(con => { %>
+      <div class="online-consultant-card" onclick="showConsultantProfile('<%= con.id %>', '<%= con.user_name %>', '<%= con.bio ? con.bio.replace(/'/g, "\\'") : "" %>', '<%= con.category_name || "" %>', '<%= con.rating %>', '<%= con.completed_count %>', '<%= con.last_active %>', '<%= con.verification_tier || "none" %>')">
+        <div class="online-avatar-wrapper">
+          <div class="online-avatar"><%= con.user_name.charAt(0) %></div>
+          <span class="online-indicator"></span>
+        </div>
+        <div class="online-name"><%= con.user_name %></div>
+        <div class="online-specialty"><%= con.category_name || 'مستشار معتمد' %></div>
+      </div>
+    <% }) %>
+    <% if (onlineConsultants.length === 0) { %>
+      <div class="text-center text-muted py-4 w-100">
+        <i class="bi bi-person-x fs-3"></i>
+        <p class="mb-0">لا يوجد مستشارون متصلون حالياً</p>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<!-- Consultation Categories - 2 Columns Grid with sub-services -->
+<section class="container mt-4">
+  <div class="text-center mb-3">
+    <h5 class="fw-bold">اختر تخصصك</h5>
+    <p class="text-muted small">استشر خبيراً في المجال الذي تريد</p>
+  </div>
+  <div class="row g-2">
+    <% const catColors = ['#6f42c1', '#dc3545', '#198754', '#0d6efd', '#fd7e14', '#20c997', '#d63384', '#6610f2']; %>
+    <% categories.forEach((cat, i) => { %>
+      <% const catServices = services.filter(s => s.category_id === cat.id); %>
+      <div class="col-6">
+        <div class="card category-card mb-0" onclick="window.location='/client/new/step2/<%= cat.id %>'">
+          <div class="category-icon-wrapper" style="background: <%= catColors[i % catColors.length] %>;width:50px;height:50px;">
+            <i class="bi <%= cat.icon %>" style="font-size:1.4rem;"></i>
+          </div>
+          <h6 class="fw-bold mb-1"><%= cat.name_ar %></h6>
+          <p class="small text-muted mb-1" style="font-size:0.7rem;"><%= cat.description %></p>
+          <!-- Sub-services under this category -->
+          <% if (catServices.length > 0) { %>
+            <div class="d-flex flex-wrap gap-1 justify-content-center">
+              <% catServices.slice(0, 3).forEach(sv => { %>
+                <span class="badge bg-light text-dark border" style="font-size:0.6rem;font-weight:400;">
+                  <i class="bi <%= sv.icon %> text-success" style="font-size:0.55rem;"></i> <%= sv.name_ar %>
+                </span>
+              <% }) %>
+              <% if (catServices.length > 3) { %>
+                <span class="badge bg-light text-muted border" style="font-size:0.6rem;font-weight:400;">+<%= catServices.length - 3 %></span>
+              <% } %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</section>
+
+<!-- Free Legal Consultation Promo - NEW USERS ONLY -->
+<section class="container mt-3">
+  <div class="card border-0" style="background: linear-gradient(135deg, #1a2332 0%, #2a3a5c 50%, #1a3a5c 100%);border-radius: 16px;overflow:hidden;">
+    <div class="card-body p-4 text-white text-center position-relative">
+      <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(200,164,92,0.1);"></div>
+      <div style="position:absolute;bottom:-40px;left:-20px;width:100px;height:100px;border-radius:50%;background:rgba(200,164,92,0.1);"></div>
+      <div class="mb-2">
+        <span class="badge px-3 py-2 fw-bold" style="font-size:0.75rem;background:var(--accent);color:#1a2332;">
+          <i class="bi bi-lightning-fill"></i> للمستخدمين الجدد فقط
+        </span>
+      </div>
+      <h5 class="fw-bold mb-2">
+        <i class="bi bi-shield-check"></i> استشارة قانونية مجانية
+      </h5>
+      <p class="small mb-3" style="opacity:0.9;line-height:1.6;">
+        ابدأ الآن وخذ استشارتك القانونية من محامٍ مرخّص، مجانًا، ومن جوالك.
+      </p>
+      <a href="/register" class="btn fw-bold px-4" style="background:var(--accent);color:#1a2332;border:none;">
+        <i class="bi bi-lightning-charge"></i> ابدأ الاستشارة المجانية
+      </a>
+    </div>
+  </div>
+</section>
+<section class="container mt-4">
+  <div class="text-center mb-3">
+    <h5 class="fw-bold">أفضل المستشارين</h5>
+    <p class="text-muted small">مستشارون معتمدون ذوو تقييمات عالية</p>
+  </div>
+  <div class="row g-2">
+    <% topConsultants.forEach(con => { %>
+      <div class="col-6">
+        <div class="card consultant-card" onclick="showConsultantProfile('<%= con.id %>', '<%= con.user_name %>', '<%= con.bio ? con.bio.replace(/'/g, "\\'") : "" %>', '', '<%= con.rating %>', '<%= con.completed_count %>', '', '<%= con.verification_tier || "none" %>')">
+          <div class="text-center">
+            <div class="avatar mx-auto" style="width:50px;height:50px;font-size:1.2rem;"><%= con.user_name.charAt(0) %></div>
+            <h6 class="fw-bold mt-2 mb-0" style="font-size:0.9rem;"><%= con.user_name %></h6>
+            <%- include("partials/verify-badge", { tier: con.verification_tier || "none" }) %>
+            <div class="small text-muted mt-1">
+              <% for (let i = 0; i < 5; i++) { %>
+                <i class="bi bi-star<%= i < Math.round(con.rating) ? '-fill text-warning' : '' %>" style="font-size:0.7rem;"></i>
+              <% } %>
+              <span class="ms-1"><%= con.rating %></span>
+            </div>
+            <span class="badge bg-success mt-1" style="font-size:0.7rem;"><%= con.completed_count %> استشارة</span>
+          </div>
+          <p class="small text-muted mt-2 mb-0" style="font-size:0.75rem;"><%= con.bio ? con.bio.substring(0, 80) + (con.bio.length > 80 ? '...' : '') : '' %></p>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</section>
+
+<!-- Consultant Profile Modal -->
+<div class="modal fade" id="consultantModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
+        <div class="consultant-modal-avatar mb-3" id="modalAvatar">أ</div>
+        <h4 class="fw-bold mb-1" id="modalName"></h4>
+        <div id="modalBadge" class="mb-2"></div>
+        <div class="mb-2" id="modalCategory"></div>
+        <div class="mb-3" id="modalRating"></div>
+        <p class="text-muted" id="modalBio"></p>
+        <div class="d-flex justify-content-center gap-3 mb-3">
+          <div class="text-center">
+            <div class="fw-bold" id="modalConsultations">0</div>
+            <small class="text-muted">استشارة</small>
+          </div>
+          <div class="text-center">
+            <div class="fw-bold" id="modalStatus">
+              <span class="badge bg-success">🟢 متصل</span>
+            </div>
+            <small class="text-muted">الحالة</small>
+          </div>
+        </div>
+        <div class="small text-muted mb-3" id="modalLastSeen"></div>
+        <a href="/client/new" class="btn btn-primary w-100">
+          <i class="bi bi-chat-dots"></i> طلب استشارة
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<section class="container mt-4 mb-4">
+  <div class="card bg-primary text-white text-center p-4">
+    <h5 class="fw-bold">جاهز للاستشارة؟</h5>
+    <p class="small mb-3">اختر مستشارك المفضل واحصل على إجابات موثوقة</p>
+    <div>
+      <a href="/client/new" class="btn btn-light px-4"><i class="bi bi-arrow-left"></i> ابدأ استشارتك</a>
+    </div>
+  </div>
+</section>
+
+<style>
+/* Online Consultants Carousel */
+.online-consultants-carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 4px 12px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+.online-consultants-carousel::-webkit-scrollbar { height: 4px; }
+.online-consultants-carousel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+.online-consultant-card {
+  flex: 0 0 auto;
+  width: 120px;
+  text-align: center;
+  padding: 12px 6px;
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  border: 2px solid transparent;
+}
+.online-consultant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  border-color: #198754;
+}
+.online-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.online-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d6efd, #6610f2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 auto;
+  border: 3px solid #e9ecef;
+}
+.online-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: #22c55e;
+  border: 2.5px solid white;
+  border-radius: 50%;
+  animation: onlinePulse 2s ease-in-out infinite;
+}
+@keyframes onlinePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+}
+.online-name { font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; color: #333; }
+.online-specialty { font-size: 0.65rem; color: #666; background: #f0fdf4; display: inline-block; padding: 2px 8px; border-radius: 10px; border: 1px solid #bbf7d0; }
+.online-dot { display: inline-block; width: 10px; height: 10px; background: #22c55e; border-radius: 50%; animation: onlinePulse 2s ease-in-out infinite; margin-left: 6px; vertical-align: middle; }
+
+/* Category Cards - 2 columns */
+.category-card {
+  text-align: center;
+  padding: 16px 10px;
+  border: none;
+  border-radius: 14px;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  height: 100%;
+}
+.category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+.category-icon-wrapper {
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  transition: transform 0.3s;
+}
+.category-card:hover .category-icon-wrapper { transform: scale(1.1) rotate(-5deg); }
+.category-icon-wrapper i { color: white; }
+.category-card p { font-size: 0.75rem; color: #666; }
+.category-card h6 { font-size: 0.9rem; }
+
+/* Consultant Cards */
+.consultant-card {
+  padding: 12px;
+  border: none;
+  border-radius: 14px;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  height: 100%;
+}
+.consultant-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+.avatar {
+  width: 50px; height: 50px; border-radius: 50%;
+  background: linear-gradient(135deg, #0d6efd, #6610f2);
+  color: white; display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; font-weight: 700;
+}
+.consultant-modal-avatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: linear-gradient(135deg, #0d6efd, #6610f2);
+  color: white; display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; font-weight: 700; margin: 0 auto;
+  border: 4px solid #e9ecef;
+}
+
+/* Ads Carousel */
+.ads-carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 4px 12px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+}
+.ads-carousel::-webkit-scrollbar { height: 3px; }
+.ads-carousel::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+.ads-carousel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+.ad-card {
+  flex: 0 0 260px;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border-radius: 14px;
+  color: white;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+  animation: adSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  animation-delay: var(--ad-delay, 0s);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  height: 70px;
+  background: linear-gradient(135deg, #6f42c1, #0d6efd);
+}
+.ad-card::after {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%; width: 200%; height: 200%;
+  background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
+  animation: adShimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+.ad-card:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 6px 25px rgba(0,0,0,0.15); color: white; }
+.ad-img { width: 70px; height: 70px; object-fit: cover; flex-shrink: 0; border-radius: 14px 0 0 14px; display: block; }
+.ad-icon { width: 42px; height: 42px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem; backdrop-filter: blur(4px); }
+.ad-content { flex: 1; min-width: 0; }
+.ad-title { font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ad-desc { font-size: 0.7rem; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ad-arrow { width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform 0.3s; }
+.ad-card:hover .ad-arrow { transform: translateX(-4px); }
+@keyframes adSlideIn { 0% { transform: translateX(60px) scale(0.9); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
+@keyframes adShimmer { 0%, 100% { transform: translate(-50%, -50%) rotate(0deg); } 50% { transform: translate(-30%, -30%) rotate(180deg); } }
+
+/* Mobile responsive tweaks */
+@media (max-width: 480px) {
+  .online-consultant-card { width: 100px; }
+  .online-avatar { width: 42px; height: 42px; font-size: 0.9rem; }
+  .ad-card { flex: 0 0 220px; height: 60px; }
+  .ad-img { width: 60px; height: 60px; }
+  .category-card { padding: 12px 8px; }
+  .category-icon-wrapper { width: 44px !important; height: 44px !important; }
+  .category-icon-wrapper i { font-size: 1.2rem !important; }
+  .consultant-card { padding: 10px; }
+  .hero { padding: 30px 0 35px !important; }
+  .hero h1 { font-size: 1.6rem !important; }
+}
+</style>
+
+<script>
+function trackAdClick(adId) {
+  fetch('/admin/ads/click', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: adId })
+  }).catch(() => {});
+}
+function showConsultantProfile(id, name, bio, category, rating, completed, lastActive, tier) {
+  document.getElementById('modalName').textContent = name;
+  document.getElementById('modalAvatar').textContent = name.charAt(0);
+  document.getElementById('modalBio').textContent = bio;
+  document.getElementById('modalConsultations').textContent = completed;
+  document.getElementById('modalCategory').innerHTML = category ? '<span class="badge bg-primary">' + category + '</span>' : '';
+  let stars = '';
+  for (let i = 0; i < 5; i++) stars += '<i class="bi bi-star' + (i < Math.round(parseFloat(rating)) ? '-fill text-warning' : '') + '"></i>';
+  document.getElementById('modalRating').innerHTML = stars + ' <span class="ms-1 small">' + rating + '</span>';
+  const badgeMap = { 'platinum': '<span class="badge" style="background:linear-gradient(135deg,#e8e8ff,#8888ff);color:#2a0066">بلاتيني</span>', 'gold': '<span class="badge bg-warning text-dark">ذهبي</span>', 'silver': '<span class="badge bg-secondary">فضي</span>', 'blue': '<span class="badge bg-primary">أزرق</span>', 'black': '<span class="badge bg-dark">أسود</span>' };
+  document.getElementById('modalBadge').innerHTML = badgeMap[tier] || '';
+  if (lastActive) {
+    const last = new Date(lastActive + 'Z');
+    const now = new Date();
+    const diffMin = Math.floor((now - last) / 60000);
+    let lastText = diffMin < 1 ? 'الآن' : diffMin < 60 ? 'منذ ' + diffMin + ' دقيقة' : diffMin < 1440 ? 'منذ ' + Math.floor(diffMin / 60) + ' ساعة' : 'منذ ' + Math.floor(diffMin / 1440) + ' يوم';
+    document.getElementById('modalStatus').innerHTML = diffMin < 5 ? '<span class="badge bg-success">🟢 متصل</span>' : '<span class="badge bg-secondary">⚪ غير متصل</span>';
+    document.getElementById('modalLastSeen').textContent = 'آخر ظهور: ' + lastText;
+  } else {
+    document.getElementById('modalStatus').innerHTML = '<span class="badge bg-success">🟢 متصل</span>';
+    document.getElementById('modalLastSeen').textContent = '';
+  }
+  document.querySelector('#consultantModal .btn-primary').href = '/client/new/step2/' + id;
+  new bootstrap.Modal(document.getElementById('consultantModal')).show();
+}
+</script>

@@ -1,0 +1,115 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-chat-dots"></i> الاستشارات</h3>
+    <div>
+      <div class="btn-group btn-group-sm">
+        <a href="/admin/consultations" class="btn <%= !currentStatus ? 'btn-primary' : 'btn-outline-primary' %>">الكل</a>
+        <a href="/admin/consultations?status=assigned" class="btn <%= currentStatus === 'assigned' ? 'btn-warning' : 'btn-outline-warning' %>">بانتظار الرد</a>
+        <a href="/admin/consultations?status=answered" class="btn <%= currentStatus === 'answered' ? 'btn-primary' : 'btn-outline-primary' %>">تم الرد</a>
+        <a href="/admin/consultations?status=paid" class="btn <%= currentStatus === 'paid' ? 'btn-success' : 'btn-outline-success' %>">مدفوعة</a>
+        <a href="/admin/consultations?status=closed" class="btn <%= currentStatus === 'closed' ? 'btn-secondary' : 'btn-outline-secondary' %>">مغلقة</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="card shadow-sm mb-3">
+    <div class="card-body py-3">
+      <form action="/admin/consultations" method="GET" class="row g-2 align-items-center">
+        <div class="col-md-6 col-lg-8">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" name="search" class="form-control" placeholder="ابحث برقم الاستشارة، اسم العميل، اسم المستشار..." value="<%= typeof search !== 'undefined' ? search : '' %>">
+            <input type="hidden" name="status" value="<%= currentStatus %>">
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <a href="/admin/consultations" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle"></i> إلغاء</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Results Summary -->
+  <div class="mb-2">
+    <span class="text-muted">عدد النتائج: <strong><%= consultations.length %></strong></span>
+    <% if (typeof search !== 'undefined' && search) { %>
+      <span class="text-muted me-3">| بحث: "<%= search %>"</span>
+    <% } %>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>العميل</th>
+              <th>المستشار</th>
+              <th>القسم</th>
+              <th>المبلغ</th>
+              <th><i class="bi bi-lightning-charge text-warning"></i></th>
+              <th>أرباح المنصة</th>
+              <th>الحالة</th>
+              <th>الدفع</th>
+              <th>التاريخ</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (consultations.length === 0) { %>
+              <tr>
+                <td colspan="10" class="text-center py-4 text-muted">
+                  <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                  <p class="mt-2">لا توجد استشارات مطابقة</p>
+                </td>
+              </tr>
+            <% } %>
+            <% consultations.forEach(c => { %>
+              <tr class="<%= c.status === 'assigned' ? 'table-warning' : '' %>">
+                <td><%= c.id %></td>
+                <td><%= c.client_name %></td>
+                <td><%= c.consultant_name || '—' %></td>
+                <td><span class="badge bg-info"><%= c.category_name %></span></td>
+                <td><%= c.amount %> ريال</td>
+                <td><%= c.is_urgent ? '<span class="badge bg-danger">عاجل</span>' : '—' %></td>
+                <td class="fw-bold text-primary"><%= c.platform_fee %> ريال</td>
+                <td>
+                  <% const sm = {'draft':'مسودة','pending_payment':'بانتظار الدفع','paid':'مدفوعة','assigned':'محوّلة','answered':'تم الرد','closed':'مغلقة','cancelled':'ملغية'}; %>
+                  <% const cm = {'assigned':'warning','paid':'success','answered':'primary','closed':'secondary','cancelled':'danger'}; %>
+                  <span class="badge bg-<%= cm[c.status] || 'secondary' %>"><%= sm[c.status] || c.status %></span>
+                </td>
+                <td>
+                  <span class="badge bg-<%= c.payment_status === 'paid' ? 'success' : 'warning' %>">
+                    <%= c.payment_status === 'paid' ? 'مدفوع' : 'غير مدفوع' %>
+                  </span>
+                </td>
+                <td class="small"><%= new Date(c.created_at).toLocaleDateString('ar-SA') %></td>
+                <td>
+                  <a href="/admin/consultation/edit/<%= c.id %>" class="btn btn-sm btn-outline-primary" title="تعديل">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="/admin/whatsapp/<%= c.client_id %>" class="btn btn-sm btn-outline-success" title="واتساب العميل">
+                    <i class="bi bi-whatsapp"></i>
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <% if (consultations.length > 0) { %>
+    <div class="mt-3">
+      <a href="/admin/consultations?status=assigned" class="btn btn-sm btn-outline-warning">
+        <i class="bi bi-eye"></i> عرض الاستشارات بانتظار الرد
+      </a>
+    </div>
+  <% } %>
+</div>

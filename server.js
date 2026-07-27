@@ -1,0 +1,110 @@
+require('dotenv').config();
+const express = require('express');
+const session = require('express-session');
+const expressLayouts = require('express-ejs-layouts');
+const path = require('path');
+const { initializeDatabase, seedDatabase } = require('./database');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Trust proxy (Render, Railway, Fly.io)
+app.set('trust proxy', 1);
+
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
+});
+
+// View engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(expressLayouts);
+app.set('layout', 'layouts/main');
+
+// Middleware
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// If using persistent volume (Fly.io), also serve uploads from there
+if (process.env.UPLOADS_DIR) {
+  app.use('/uploads', express.static(path.join(process.env.UPLOADS_DIR, 'uploads')));
+}
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+// Session (in-memory for dev, switch to DB store in production)
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'dellini-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 } // 7 days
+}));
+
+// Global template variables
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  res.locals.siteName = process.env.SITE_NAME || 'دلني';
+  res.locals.currentPath = req.path;
+  res.locals.success_msg = req.session.success_msg || '';
+  res.locals.error_msg = req.session.error_msg || '';
+  res.locals.isAdmin = req.session.user?.role === 'admin';
+  res.locals.isSupervisor = req.session.user?.role === 'supervisor';
+  delete req.session.success_msg;
+  delete req.session.error_msg;
+  next();
+});
+
+// Routes
+app.use('/', require('./routes/auth'));
+app.use('/client', require('./routes/client'));
+app.use('/consultant', require('./routes/consultant'));
+app.use('/admin', require('./routes/admin'));
+app.use('/messages', require('./routes/messages'));
+app.use('/', require('./routes/main'));
+app.use('/', require('./routes/password-reset'));
+app.use('/stripe', require('./routes/stripe'));
+app.use('/stcpay', require('./routes/stcpay'));
+app.use('/admin/ads', require('./routes/ads'));
+app.use('/bank-transfer', require('./routes/bank-transfer'));
+app.use('/call', require('./routes/call'));
+
+// 404
+app.use((req, res) => {
+  res.status(404).render('404', { title: 'الصفحة غير موجودة' });
+});
+
+// Wait for DB init then start
+async function startServer() {
+  try {
+    await initializeDatabase();
+    // Auto-seed if SEED env is set, or if database is newly created (empty)
+    if (process.env.SEED === 'true' || process.env.SEED === '1') {
+      await seedDatabase();
+    } else {
+      // Check if database has data, seed if empty
+      const { getDB } = require('./database');
+      const db = getDB();
+      const userCount = db.get('SELECT COUNT(*) as c FROM users');
+      if (!userCount || userCount.c === 0) {
+        console.log('🌱 Database is empty, auto-seeding...');
+        await seedDatabase();
+      }
+    }
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 دلني running on http://0.0.0.0:${PORT}`);
+    });
+  } catch (err) {
+    console.error('Failed to start:', err);
+    // Don't exit on Railway — let health check fail and restart
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`⚠️ دلني running in degraded mode on http://0.0.0.0:${PORT}`);
+    });
+  }
+}
+
+startServer();

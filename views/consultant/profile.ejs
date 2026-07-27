@@ -1,0 +1,93 @@
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <a href="/consultant" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-right"></i> رجوع</a>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="fw-bold mb-0"><i class="bi bi-person-badge"></i> الملف الشخصي للمستشار</h5>
+        </div>
+        <div class="card-body p-4">
+          <form action="/consultant/profile" method="POST">
+            <div class="mb-3">
+              <label class="form-label fw-bold">نبذة عنك</label>
+              <textarea name="bio" class="form-control" rows="4" placeholder="اكتب نبذة مختصرة عن خبراتك وتخصصك"><%= consultant.bio %></textarea>
+              <div class="form-text">هذه النبضة تظهر للعملاء عند اختيار المستشار</div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">سنوات الخبرة</label>
+                <input type="number" name="experience_years" class="form-control" min="0" max="50"
+                  value="<%= consultant.experience_years || 0 %>">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">حالة التوثيق</label>
+                <div>
+                  <% if (consultant.is_verified) { %>
+                    <span class="badge bg-success fs-6"><i class="bi bi-patch-check-fill"></i> موثق</span>
+                  <% } else { %>
+                    <span class="badge bg-warning fs-6">قيد المراجعة</span>
+                    <span class="small text-muted d-block">سيتم مراجعة طلب توثيقك من قبل الإدارة</span>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">المؤهلات والشهادات</label>
+              <textarea name="credentials" class="form-control" rows="3" placeholder="مثال: ماجستير في المالية - شهادة CMA - عضو هيئة الخبراء"><%= consultant.credentials %></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">التقييم</label>
+              <div>
+                <% for (let i = 0; i < 5; i++) { %>
+                  <i class="bi bi-star<%= i < Math.round(consultant.rating) ? '-fill text-warning' : '' %> fs-4"></i>
+                <% } %>
+                <span class="fw-bold ms-2"><%= consultant.rating %> (<%= consultant.rating_count %> تقييم)</span>
+              </div>
+            </div>
+
+            <hr>
+            <div class="mb-3">
+              <label class="form-label fw-bold">حالة التوفر</label>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="is_available" value="1"
+                  id="isAvailable" <%= consultant.is_available ? 'checked' : '' %>
+                  onchange="fetch('/consultant/toggle-availability', {method:'POST'}).then(()=>location.reload())">
+                <label class="form-check-label" for="isAvailable">
+                  <%= consultant.is_available ? '🟢 متاح للاستشارات' : '🔴 غير متاح' %>
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-check-lg"></i> حفظ التغييرات
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Stats Card -->
+      <div class="card mt-3 bg-light">
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-4">
+              <div class="fw-bold h4 text-primary"><%= consultant.rating_count %></div>
+              <div class="small text-muted">استشارات منجزة</div>
+            </div>
+            <div class="col-4">
+              <div class="fw-bold h4 text-success"><%= consultant.rating %></div>
+              <div class="small text-muted">التقييم</div>
+            </div>
+            <div class="col-4">
+              <div class="fw-bold h4 text-info"><%= consultant.balance %></div>
+              <div class="small text-muted">الرصيد (ريال)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,103 @@
+<div class="container py-4">
+  <!-- Header -->
+  <div class="text-center mb-5">
+    <h1 class="fw-bold">
+      <svg viewBox="0 0 24 24" width="32" height="32" fill="#1d9bf0" style="display:inline;vertical-align:-5px">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
+      </svg>
+      المستشارون الموثّقون
+    </h1>
+    <p class="lead text-muted">نظام توثيق متعدد المستويات يضمن لك اختيار أفضل المستشارين</p>
+  </div>
+
+  <!-- Tier Cards -->
+  <div class="row g-3 mb-5 justify-content-center">
+    <% tiers.forEach(t => { %>
+      <div class="col-md col-4">
+        <div class="card text-center p-3 h-100" style="border-top: 4px solid <%= t.color %>;">
+          <div style="font-size: 2rem;"><%= t.icon %></div>
+          <div class="fw-bold h5 mt-2"><%= t.name %></div>
+          <div class="text-muted small"><%= t.stars.toLocaleString() %> ★</div>
+          <div class="mt-2">
+            <span class="verify-badge verify-<%= t.id %>"><%= t.name_short %></span>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+
+  <!-- Verified List -->
+  <% if (verified.length === 0) { %>
+    <div class="card shadow-sm text-center py-5">
+      <i class="bi bi-patch-check" style="font-size: 4rem; color: #dee2e6;"></i>
+      <h5 class="mt-3 text-muted">لا يوجد مستشارون موثّقون بعد</h5>
+    </div>
+  <% } else { %>
+    <div class="row g-4">
+      <% verified.forEach(c => { %>
+        <div class="col-md-6 col-lg-4">
+          <div class="card consultant-card h-100">
+            <div class="d-flex align-items-start gap-3">
+              <div class="avatar"><%= c.user_name.charAt(0) %></div>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <h6 class="fw-bold mb-1"><%= c.user_name %></h6>
+                    <%- include('partials/verify-badge', { tier: c.verification_tier }) %>
+                  </div>
+                </div>
+                <div class="small mt-2">
+                  <% for (let i = 0; i < 5; i++) { %>
+                    <i class="bi bi-star<%= i < Math.round(c.rating) ? '-fill text-warning' : '' %>"></i>
+                  <% } %>
+                  <span class="ms-1">(<%= c.rating %>)</span>
+                </div>
+                <p class="small text-muted mt-1 mb-0"><%= c.bio || '' %></p>
+                <div class="mt-2">
+                  <span class="badge bg-light text-dark"><i class="bi bi-check-circle"></i> <%= c.completed_count || 0 %> استشارة</span>
+                  <% if (c.category_name) { %>
+                    <span class="badge bg-info"><%= c.category_name %></span>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <!-- How it works -->
+  <div class="card bg-light mt-5 p-4">
+    <h5 class="fw-bold mb-3"><i class="bi bi-question-circle"></i> كيف يعمل نظام التوثيق؟</h5>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="d-flex gap-2">
+          <span class="badge bg-primary" style="height:fit-content">1</span>
+          <div>
+            <strong>اكتساب النجوم</strong>
+            <p class="small text-muted mb-0">يكسب المستشار نجومًا من خلال إتمام الاستشارات بنجاح وحصوله على تقييمات عالية</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="d-flex gap-2">
+          <span class="badge bg-primary" style="height:fit-content">2</span>
+          <div>
+            <strong>الترقية تلقائيًا</strong>
+            <p class="small text-muted mb-0">عند الوصول للعدد المطلوب من النجوم، يتم ترقية شارة التوثيق تلقائيًا</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="d-flex gap-2">
+          <span class="badge bg-primary" style="height:fit-content">3</span>
+          <div>
+            <strong>ظهور الشارة</strong>
+            <p class="small text-muted mb-0">تظهر شارة التوثيق بجانب اسم المستشار في جميع صفحات المنصة</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

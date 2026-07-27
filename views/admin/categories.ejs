@@ -1,0 +1,235 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-collection"></i> إدارة الأقسام</h3>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+      <i class="bi bi-plus-lg"></i> قسم جديد
+    </button>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الأيقونة</th>
+              <th>الاسم</th>
+              <th>القسم الأب</th>
+              <th>الوصف</th>
+              <th>الترتيب</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% 
+              const mainCats = categories.filter(c => !c.parent_id);
+              const subCats = categories.filter(c => c.parent_id);
+            %>
+            <% mainCats.forEach(cat => { %>
+              <tr class="table-primary">
+                <td><%= cat.id %></td>
+                <td><i class="bi <%= cat.icon %> fs-5"></i></td>
+                <td class="fw-bold"><%= cat.name_ar %></td>
+                <td><span class="badge bg-secondary">قسم رئيسي</span></td>
+                <td class="small text-muted"><%= cat.description %></td>
+                <td><%= cat.sort_order %></td>
+                <td>
+                  <span class="badge bg-<%= cat.is_active ? 'success' : 'danger' %>">
+                    <%= cat.is_active ? 'مفعّل' : 'غير مفعّل' %>
+                  </span>
+                </td>
+                <td class="text-nowrap">
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                    data-bs-target="#editCategoryModal<%= cat.id %>">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <% if (isAdmin) { %>
+                    <form action="/admin/categories/delete" method="POST" class="d-inline"
+                      onsubmit="return confirm('حذف القسم نهائياً؟')">
+                      <input type="hidden" name="id" value="<%= cat.id %>">
+                      <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                    <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal"
+                      data-bs-target="#addSubModal<%= cat.id %>">
+                      <i class="bi bi-plus-circle"></i>
+                    </button>
+                  <% } %>
+                </td>
+              </tr>
+              <% 
+                const children = subCats.filter(c => c.parent_id === cat.id);
+                children.forEach(child => { 
+              %>
+                <tr>
+                  <td><%= child.id %></td>
+                  <td><i class="bi <%= child.icon %> fs-5"></i></td>
+                  <td class="fw-bold ps-4"><i class="bi bi-arrow-return-right"></i> <%= child.name_ar %></td>
+                  <td><span class="badge bg-info"><%= cat.name_ar %></span></td>
+                  <td class="small text-muted"><%= child.description %></td>
+                  <td><%= child.sort_order %></td>
+                  <td>
+                    <span class="badge bg-<%= child.is_active ? 'success' : 'danger' %>">
+                      <%= child.is_active ? 'مفعّل' : 'غير مفعّل' %>
+                    </span>
+                  </td>
+                  <td class="text-nowrap">
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                      data-bs-target="#editCategoryModal<%= child.id %>">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <% if (isAdmin) { %>
+                      <form action="/admin/categories/delete" method="POST" class="d-inline"
+                        onsubmit="return confirm('حذف القسم الفرعي نهائياً؟')">
+                        <input type="hidden" name="id" value="<%= child.id %>">
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                      </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Main Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">إضافة قسم جديد</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/admin/categories/add" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">اسم القسم *</label>
+            <input type="text" name="name_ar" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">الوصف</label>
+            <textarea name="description" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">أيقونة (Bootstrap Icons)</label>
+              <input type="text" name="icon" class="form-control" value="bi-chat-dots">
+              <div class="form-text">مثال: bi-cash-coin, bi-heart, bi-laptop</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">الترتيب</label>
+              <input type="number" name="sort_order" class="form-control" value="0">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-primary">إضافة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Subcategory Modals -->
+<% mainCats.forEach(cat => { %>
+  <div class="modal fade" id="addSubModal<%= cat.id %>" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">إضافة قسم فرعي تحت: <%= cat.name_ar %></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form action="/admin/categories/add" method="POST">
+          <input type="hidden" name="parent_id" value="<%= cat.id %>">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">اسم القسم الفرعي *</label>
+              <input type="text" name="name_ar" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">الوصف</label>
+              <textarea name="description" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">أيقونة</label>
+                <input type="text" name="icon" class="form-control" value="bi-arrow-return-right">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">الترتيب</label>
+                <input type="number" name="sort_order" class="form-control" value="0">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+            <button type="submit" class="btn btn-success">إضافة قسم فرعي</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% }); %>
+
+<!-- Edit Modals -->
+<% categories.forEach(cat => { %>
+  <div class="modal fade" id="editCategoryModal<%= cat.id %>" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">تعديل القسم: <%= cat.name_ar %></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form action="/admin/categories/edit" method="POST">
+          <input type="hidden" name="id" value="<%= cat.id %>">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">اسم القسم *</label>
+              <input type="text" name="name_ar" class="form-control" value="<%= cat.name_ar %>" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">الوصف</label>
+              <textarea name="description" class="form-control" rows="2"><%= cat.description %></textarea>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">أيقونة</label>
+                <input type="text" name="icon" class="form-control" value="<%= cat.icon %>">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">الترتيب</label>
+                <input type="number" name="sort_order" class="form-control" value="<%= cat.sort_order %>">
+              </div>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="is_active" value="1" id="active<%= cat.id %>"
+                <%= cat.is_active ? 'checked' : '' %>>
+              <label class="form-check-label" for="active<%= cat.id %>">مفعّل</label>
+            </div>
+            <% if (!cat.parent_id) { %>
+              <div class="mb-3">
+                <label class="form-label">القسم الأب</label>
+                <select name="parent_id" class="form-select">
+                  <option value="">— قسم رئيسي —</option>
+                  <% mainCats.filter(m => m.id !== cat.id).forEach(m => { %>
+                    <option value="<%= m.id %>" <%= cat.parent_id == m.id ? 'selected' : '' %>><%= m.name_ar %></option>
+                  <% }); %>
+                </select>
+              </div>
+            <% } %>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+            <button type="submit" class="btn btn-primary">حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% }) %>

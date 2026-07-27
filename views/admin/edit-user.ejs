@@ -1,0 +1,299 @@
+<div class="container py-4">
+  <a href="/admin/users" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-right"></i> رجوع</a>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+          <h5 class="fw-bold mb-0"><i class="bi bi-person-gear"></i> تعديل الحساب: <%= user.name %></h5>
+        </div>
+        <div class="card-body p-4">
+          <form action="/admin/user/edit/<%= user.id %>" method="POST" enctype="multipart/form-data">
+            <!-- الصورة الشخصية -->
+            <div class="text-center mb-4">
+              <% if (user.avatar) { %>
+                <img src="<%= user.avatar %>" class="rounded-circle border" width="100" height="100" style="object-fit:cover">
+              <% } else { %>
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center border" style="width:100px;height:100px">
+                  <i class="bi bi-person fs-1 text-muted"></i>
+                </div>
+              <% } %>
+              <div class="mt-2">
+                <label class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-camera"></i> تغيير الصورة
+                  <input type="file" name="avatar" accept="image/*" class="d-none">
+                </label>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">الاسم</label>
+                <input type="text" name="name" class="form-control" value="<%= user.name %>" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">البريد الإلكتروني</label>
+                <input type="email" name="email" class="form-control" value="<%= user.email %>" required>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label class="form-label fw-bold">رقم الجوال</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-phone"></i></span>
+                  <input type="text" name="phone" class="form-control" value="<%= user.phone || '' %>" placeholder="05xxxxxxxx">
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">
+                  <i class="bi bi-whatsapp text-success"></i> واتساب
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-chat-dots text-success"></i></span>
+                  <input type="text" name="whatsapp" class="form-control" value="<%= user.whatsapp || user.phone || '' %>" placeholder="05xxxxxxxx">
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">الدور</label>
+                <select name="role" class="form-select">
+                  <option value="client" <%= user.role === 'client' ? 'selected' : '' %>>عميل</option>
+                  <option value="consultant" <%= user.role === 'consultant' ? 'selected' : '' %>>مستشار</option>
+                  <option value="supervisor" <%= user.role === 'supervisor' ? 'selected' : '' %>>مشرف</option>
+                  <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>مدير</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 🔑 تغيير كلمة المرور -->
+            <div class="card bg-light mb-3">
+              <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="bi bi-key"></i> تغيير كلمة المرور</h6>
+                <div class="row">
+                  <div class="col-md-6 mb-2">
+                    <label class="form-label">كلمة المرور الجديدة</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                      <input type="password" name="password" class="form-control" placeholder="اتركه فارغ إذا ما تريد التغيير" minlength="6">
+                    </div>
+                  </div>
+                  <div class="col-md-6 mb-2">
+                    <label class="form-label">تأكيد كلمة المرور</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                      <input type="password" name="confirm_password" class="form-control" placeholder="أعد إدخال كلمة المرور" minlength="6">
+                    </div>
+                  </div>
+                </div>
+                <small class="text-muted">اترك الحقول فارغة إذا كنت لا تريد تغيير كلمة المرور</small>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="is_active" value="1" id="isActive" <%= user.is_active ? 'checked' : '' %>>
+                <label class="form-check-label" for="isActive"><strong>حساب نشط</strong></label>
+              </div>
+            </div>
+
+            <% if (user.role === 'consultant' && consultant) { %>
+              <hr>
+              <h6 class="fw-bold mb-3"><i class="bi bi-patch-check"></i> إعدادات التوثيق</h6>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">مستوى التوثيق</label>
+                  <select name="verification_tier" class="form-select">
+                    <option value="none" <%= consultant.verification_tier === 'none' ? 'selected' : '' %>>— غير موثّق —</option>
+                    <% verificationTiers.filter(t => t.id !== 'none').forEach(t => { %>
+                      <option value="<%= t.id %>" <%= consultant.verification_tier === t.id ? 'selected' : '' %>>
+                        <%= t.icon %> <%= t.name %> (<%= t.stars.toLocaleString() %> ★)
+                      </option>
+                    <% }) %>
+                  </select>
+                  <div class="form-text">اختر مستوى التوثيق للمستشار</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">حالة المستشار</label>
+                  <div class="form-check form-switch mt-2">
+                    <input class="form-check-input" type="checkbox" name="is_verified" value="1" id="isVerified" <%= consultant.is_verified ? 'checked' : '' %>>
+                    <label class="form-check-label" for="isVerified">موثّق</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">المعاينة الحية</label>
+                <div class="p-3 bg-light rounded text-center">
+                  <span id="badgePreview">اختر مستوى توثيق لرؤية المعاينة</span>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-bold">نبذة عن المستشار</label>
+                <textarea name="bio" rows="3" class="form-control"><%= consultant.bio || '' %></textarea>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">سنوات الخبرة</label>
+                  <input type="number" name="experience_years" class="form-control" value="<%= consultant.experience_years || 0 %>">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">المؤهلات</label>
+                  <input type="text" name="credentials" class="form-control" value="<%= consultant.credentials || '' %>">
+                </div>
+              </div>
+
+              <!-- المحفظة -->
+              <hr>
+              <h6 class="fw-bold mb-3"><i class="bi bi-wallet2"></i> المحفظة المالية</h6>
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">الرصيد الحالي</label>
+                  <div class="fw-bold h4 text-success"><%= consultant.balance || 0 %> ريال</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">إضافة رصيد</label>
+                  <div class="input-group">
+                    <input type="number" name="add_balance" class="form-control" placeholder="المبلغ" min="0" step="1">
+                    <span class="input-group-text">ريال</span>
+                    <button type="submit" class="btn btn-success" name="add_balance_btn" value="1">
+                      <i class="bi bi-plus-circle"></i> إضافة
+                    </button>
+                  </div>
+                  <small class="text-muted">يمكنك إضافة رصيد للمستشار مباشرة</small>
+                </div>
+              </div>
+            <% } %>
+
+            <!-- محفظة العميل -->
+            <% if (user.role === 'client') { 
+              const wallet = user.wallet_balance || 0;
+            %>
+              <hr>
+              <h6 class="fw-bold mb-3"><i class="bi bi-wallet2"></i> المحفظة المالية</h6>
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">الرصيد الحالي</label>
+                  <div class="fw-bold h4 text-success"><%= wallet %> ريال</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">شحن المحفظة</label>
+                  <div class="input-group">
+                    <input type="number" name="add_balance" class="form-control" placeholder="المبلغ (أقل شيء 100)" min="100" step="1">
+                    <span class="input-group-text">ريال</span>
+                    <button type="submit" class="btn btn-success" name="add_balance_btn" value="1">
+                      <i class="bi bi-plus-circle"></i> شحن
+                    </button>
+                  </div>
+                  <small class="text-muted">الحد الأدنى للشحن: 100 ريال</small>
+                </div>
+              </div>
+            <% } %>
+
+            <hr>
+            <div class="d-flex gap-2 flex-wrap">
+              <a href="/admin/users" class="btn btn-outline-secondary">إلغاء</a>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ التغييرات</button>
+              <% if (user.whatsapp || user.phone) { %>
+                <a href="/admin/whatsapp/<%= user.id %>" class="btn btn-success" target="_blank">
+                  <i class="bi bi-whatsapp"></i> واتساب
+                </a>
+              <% } %>
+              <a href="/admin/wallet/<%= user.id %>" class="btn btn-info">
+                <i class="bi bi-wallet2"></i> المحفظة
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+          <h6 class="fw-bold mb-0"><i class="bi bi-info-circle"></i> معلومات الحساب</h6>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <span class="text-muted small">رقم المستخدم</span>
+            <div class="fw-bold">#<%= user.id %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">تاريخ التسجيل</span>
+            <div><%= new Date(user.created_at).toLocaleDateString('ar-SA') %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">آخر تحديث</span>
+            <div><%= new Date(user.updated_at).toLocaleDateString('ar-SA') %></div>
+          </div>
+          <div class="mb-2">
+            <span class="text-muted small">الرصيد (محفظة)</span>
+            <div class="fw-bold text-success"><%= user.wallet_balance || 0 %> ريال</div>
+          </div>
+          <% if (user.role === 'consultant' && consultant) { %>
+            <hr>
+            <div class="mb-2">
+              <span class="text-muted small">التقييم</span>
+              <div><%= consultant.rating %> ★ (<%= consultant.rating_count %> تقييم)</div>
+            </div>
+            <div class="mb-2">
+              <span class="text-muted small">رصيد المستشار</span>
+              <div class="fw-bold text-success"><%= consultant.balance %> ريال</div>
+            </div>
+            <div class="mb-2">
+              <span class="text-muted small">التوثيق الحالي</span>
+              <div>
+                <%- include('../partials/verify-badge', { tier: consultant.verification_tier, size: 'lg' }) %>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h6 class="fw-bold mb-0"><i class="bi bi-cash-coin"></i> معاملات المحفظة</h6>
+        </div>
+        <div class="card-body p-0">
+          <% if (!walletTransactions || walletTransactions.length === 0) { %>
+            <div class="text-center py-3 text-muted small">لا توجد معاملات</div>
+          <% } else { %>
+            <div class="list-group list-group-flush">
+              <% walletTransactions.slice(0, 5).forEach(t => { %>
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <small class="d-block">
+                      <%= t.type === 'deposit' ? '💰 إيداع' : t.type === 'payment' ? '💸 دفع' : t.type === 'withdrawal' ? '🏦 سحب' : '🔄 مسترد' %>
+                    </small>
+                    <small class="text-muted"><%= new Date(t.created_at).toLocaleDateString('ar-SA') %></small>
+                  </div>
+                  <span class="fw-bold <%= t.type === 'deposit' ? 'text-success' : 'text-danger' %>">
+                    <%= t.type === 'deposit' ? '+' : '-' %><%= t.amount %> ريال
+                  </span>
+                </div>
+              <% }); %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelector('select[name="verification_tier"]')?.addEventListener('change', function() {
+  const preview = document.getElementById('badgePreview');
+  const tier = this.value;
+  if (tier === 'none') {
+    preview.innerHTML = '❌ غير موثّق';
+    preview.className = 'p-2 rounded';
+  } else {
+    fetch('/admin/verification/badge-preview?tier=' + tier)
+      .then(r => r.text())
+      .then(html => { preview.innerHTML = html; preview.className = 'p-2 rounded bg-white'; })
+      .catch(() => { preview.textContent = tier; });
+  }
+});
+</script>

@@ -1,0 +1,36 @@
+<div class="container py-4">
+  <div class="step-indicator">
+    <div class="step active">
+      <div class="step-number">1</div>
+      <div class="step-label">اختر القسم</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-label">اختر المستشار</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-label">اكتب استشارتك</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-label">الدفع</div>
+    </div>
+  </div>
+
+  <h3 class="fw-bold text-center mb-4">اختر تخصص الاستشارة</h3>
+  <div class="row g-4">
+    <% categories.forEach(cat => { %>
+      <div class="col-md-4 col-lg-3">
+        <div class="card category-card" onclick="window.location='/client/new/step2/<%= cat.id %>'">
+          <i class="bi <%= cat.icon %>"></i>
+          <h5><%= cat.name_ar %></h5>
+          <p><%= cat.description %></p>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</div>

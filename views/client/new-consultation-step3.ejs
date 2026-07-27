@@ -1,0 +1,213 @@
+<div class="container py-4">
+  <div class="step-indicator">
+    <div class="step completed">
+      <div class="step-number">✓</div>
+      <div class="step-label">اختر القسم</div>
+    </div>
+    <div class="step-connector completed"></div>
+    <div class="step completed">
+      <div class="step-number">✓</div>
+      <div class="step-label">اختر المستشار</div>
+    </div>
+    <div class="step-connector completed"></div>
+    <div class="step active">
+      <div class="step-number">3</div>
+      <div class="step-label">اكتب استشارتك</div>
+    </div>
+    <div class="step-connector"></div>
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-label">الدفع</div>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+            <div class="avatar"><%= consultant.user_name.charAt(0) %></div>
+            <div>
+              <h5 class="fw-bold mb-0"><%= consultant.user_name %></h5>
+              <div class="small text-muted"><%= consultant.bio %></div>
+              <h5 class="text-primary fw-bold mt-1"><%= consultant.price %> ريال</h5>
+            </div>
+          </div>
+
+          <form action="/client/new/submit" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="category_id" value="<%= categoryId %>">
+            <input type="hidden" name="consultant_id" value="<%= consultantId %>">
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">عنوان الاستشارة (اختياري)</label>
+              <input type="text" name="title" class="form-control" placeholder="عنوان مختصر لاستشارتك">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">تفاصيل الاستشارة *</label>
+              <textarea name="question" id="questionText" rows="6" class="form-control" required minlength="10"
+                placeholder="اكتب سؤالك بوضوح وتفصيل... كلما كان سؤالك أوضح كلما حصلت على إجابة أدق"
+                oninput="checkPhoneNumbers(this)"></textarea>
+              <div class="form-text">الحد الأدنى 10 أحرف</div>
+              <div id="phoneWarning" class="d-none mt-2">
+                <div class="alert alert-danger py-2 mb-0">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  <strong>تنبيه:</strong> يُمنع إضافة أرقام الجوال في الاستشارة لأمن المعلومات.
+                  <span id="phoneMatches" class="fw-bold"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">إرفاق ملف (اختياري)</label>
+              <input type="file" name="attachment" class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip">
+              <div id="filePreview"></div>
+              <div class="form-text">الحد الأقصى 5MB — صيغ مدعومة: PDF, Word, صور, ZIP</div>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="hide_identity" value="1" id="hideIdentity" checked>
+                <label class="form-check-label" for="hideIdentity">
+                  <strong>إخفاء هويتي</strong> — لا يظهر اسمي للمستشار
+                </label>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="is_urgent" value="1" id="isUrgent" onchange="toggleUrgent()">
+                <label class="form-check-label" for="isUrgent">
+                  <strong>استشارة عاجلة</strong> — <span class="text-danger">رسوم إضافية 50%</span>
+                  <div class="small text-muted mt-1">
+                    السعر الأساسي: <strong><%= consultant.price %> ريال</strong>
+                    | السعر العاجل: <strong id="urgentPrice"><%= consultant.price * 1.5 %> ريال</strong>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <% if (voiceEnabled && consultant.voice_enabled) { %>
+            <div class="mb-3 p-3 rounded" style="background:#f0f7ff;border:1px solid #cce5ff;">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="bi bi-telephone fs-4 text-primary"></i>
+                <strong>مكالمة صوتية</strong>
+                <span class="badge bg-primary" style="font-size:0.6rem;">جديد</span>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="consultation_type" value="text" id="typeText" checked onchange="toggleType()">
+                <label class="form-check-label fw-bold" for="typeText">
+                  📝 استشارة كتابية — <span id="textPrice"><%= consultant.price %> ريال</span>
+                </label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="consultation_type" value="voice" id="typeVoice" onchange="toggleType()">
+                <label class="form-check-label fw-bold" for="typeVoice">
+                  🎧 مكالمة صوتية عبر الموقع — <span id="voicePerMin"><%= consultant.voice_price_per_minute || 5 %> ريال/دقيقة</span>
+                </label>
+              </div>
+              <div id="voiceDurationSection" class="d-none mt-2">
+                <label class="form-label fw-bold small">مدة المكالمة:</label>
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                  <% const durations = [5, 10, 15, 30, 45, 60]; %>
+                  <% durations.forEach(d => { %>
+                    <label class="btn btn-outline-primary btn-sm duration-option" style="<%= d === 15 ? 'border-width:2px;background:#e8f4ff;' : '' %>">
+                      <input type="radio" name="duration" value="<%= d %>" <%= d === 15 ? 'checked' : '' %> onchange="updateVoicePrice()" hidden>
+                      <%= d %> د
+                    </label>
+                  <% }) %>
+                </div>
+                <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded">
+                  <span class="small text-muted">إجمالي المكالمة:</span>
+                  <span class="fw-bold text-primary h5 mb-0" id="voiceTotalPrice">0 ريال</span>
+                </div>
+                <input type="hidden" name="voice_price_per_min" id="voicePricePerMin" value="<%= consultant.voice_price_per_minute || 5 %>">
+              </div>
+              <small class="text-muted d-block mt-1">المكالمة تكون عبر المتصفح — تحتاج ميكروفون وسماعة</small>
+            </div>
+            <% } %>
+
+            <div class="d-flex gap-2">
+              <a href="/client/new/step2/<%= categoryId %>" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+              <button type="submit" class="btn btn-primary flex-grow-1">
+                <i class="bi bi-credit-card"></i> متابعة للدفع
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleUrgent() {
+  const checked = document.getElementById('isUrgent').checked;
+  const basePrice = <%= consultant.price %>;
+  const priceEl = document.getElementById('urgentPrice');
+  if (checked) {
+    priceEl.textContent = (basePrice * 1.5) + ' ريال';
+    priceEl.className = 'text-danger fw-bold';
+  } else {
+    priceEl.textContent = basePrice + ' ريال';
+    priceEl.className = '';
+  }
+}
+
+// ─── Voice call type toggle ───
+function toggleType() {
+  const isVoice = document.getElementById('typeVoice').checked;
+  const voiceSection = document.getElementById('voiceDurationSection');
+  if (isVoice) {
+    voiceSection.classList.remove('d-none');
+    updateVoicePrice();
+  } else {
+    voiceSection.classList.add('d-none');
+  }
+}
+
+function updateVoicePrice() {
+  const perMin = parseFloat(document.getElementById('voicePricePerMin').value) || 5;
+  const selected = document.querySelector('input[name="duration"]:checked');
+  const minutes = selected ? parseInt(selected.value) : 15;
+  const total = perMin * minutes;
+  document.getElementById('voiceTotalPrice').textContent = total + ' ريال';
+}
+
+// Init on load
+toggleType();
+
+// Phone number filter
+function checkPhoneNumbers(textarea) {
+  const text = textarea.value;
+  const result = PhoneFilter.check(text);
+  const warning = document.getElementById('phoneWarning');
+  const matches = document.getElementById('phoneMatches');
+  
+  if (result.found) {
+    warning.classList.remove('d-none');
+    matches.textContent = '📱 تم رصد: ' + result.matches.join(', ');
+  } else {
+    warning.classList.add('d-none');
+  }
+}
+
+// Block form submission if phone numbers found
+document.querySelector('form').addEventListener('submit', function(e) {
+  const text = document.getElementById('questionText').value;
+  const result = PhoneFilter.check(text);
+  
+  if (result.found) {
+    e.preventDefault();
+    NotificationSounds.warning();
+    alert('❌ يمنع إضافة أرقام الجوال في الاستشارة.\nالرجاء حذف الأرقام التالية:\n' + result.matches.join('\n'));
+    
+    // Send alert to admin via API
+    fetch('/api/flag-phone-number', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text, matches: result.matches })
+    }).catch(() => {});
+  }
+});
+</script>

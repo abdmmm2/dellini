@@ -1,0 +1,49 @@
+<div class="container py-4">
+  <h3 class="fw-bold mb-4"><i class="bi bi-receipt"></i> فواتيري</h3>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <% if (transactions.length === 0) { %>
+        <div class="text-center py-5">
+          <i class="bi bi-receipt-cutoff" style="font-size: 3rem; color: #dee2e6;"></i>
+          <p class="text-muted mt-2">لا توجد فواتير بعد</p>
+        </div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>رقم العملية</th>
+                <th>الاستشارة</th>
+                <th>المبلغ</th>
+                <th>الرسوم</th>
+                <th>الحالة</th>
+                <th>التاريخ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% transactions.forEach(t => { %>
+                <tr>
+                  <td>#<%= t.id %></td>
+                  <td><%= t.title || t.question?.substring(0, 30) || '—' %></td>
+                  <td><%= t.amount %> ريال</td>
+                  <td><%= t.platform_fee %> ريال</td>
+                  <td>
+                    <% if (t.status === 'completed') { %>
+                      <span class="badge bg-success">مكتملة</span>
+                    <% } else if (t.status === 'pending') { %>
+                      <span class="badge bg-warning">قيد الانتظار</span>
+                    <% } else { %>
+                      <span class="badge bg-danger"><%= t.status %></span>
+                    <% } %>
+                  </td>
+                  <td class="small"><%= new Date(t.created_at).toLocaleDateString('ar-SA') %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎧 مكالمة #<%= consultation.id %> — دلني</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a2332;
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .call-header {
+      background: linear-gradient(135deg, #1a2332, #2a3a5c);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      z-index: 100;
+      position: relative;
+    }
+    .call-header h6 { margin: 0; font-weight: 700; color: #c8a45c; }
+    .call-header .badge { font-size: 0.7rem; }
+    .call-header .btn-close-call {
+      color: #dc3545;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+    .call-info {
+      text-align: center;
+      padding: 8px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .call-info small { color: #999; }
+    .call-info strong { color: #c8a45c; }
+    #jitsiContainer {
+      height: calc(100vh - 100px);
+      width: 100%;
+    }
+    #jitsiContainer iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .waiting-msg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: calc(100vh - 100px);
+      flex-direction: column;
+      color: #999;
+    }
+    .waiting-msg i { font-size: 3rem; margin-bottom: 12px; color: #c8a45c; }
+    .loading-spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(200,164,92,0.3);
+      border-radius: 50%;
+      border-top-color: #c8a45c;
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 600px) {
+      .call-header { padding: 8px 12px; flex-wrap: wrap; gap: 4px; }
+      .call-header h6 { font-size: 0.85rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="call-header">
+    <div class="d-flex align-items-center gap-2">
+      <span style="color:#c8a45c;font-weight:700;">دلني</span>
+      <span class="badge bg-primary"><i class="bi bi-telephone"></i> مكالمة</span>
+    </div>
+    <div class="text-center">
+      <h6><%= consultation.consultant_name || 'مستشار' %> 🎧 <%= consultation.client_name || 'عميل' %></h6>
+    </div>
+    <div>
+      <span class="badge bg-success me-2"><%= consultation.duration_minutes %> دقيقة</span>
+      <a href="<%= backUrl %>" class="btn-close-call">
+        ✕ إنهاء
+      </a>
+    </div>
+  </div>
+
+  <div class="call-info">
+    <small>غرفة: <strong><%= roomName %></strong> | استشارة #<%= consultation.id %></small>
+  </div>
+
+  <div id="jitsiContainer">
+    <div class="waiting-msg" id="waitingMsg">
+      <div class="loading-spinner"></div>
+      <p>جارٍ الاتصال بغرفة المكالمة...</p>
+    </div>
+  </div>
+
+  <script src="https://meet.jit.si/external_api.js"></script>
+  <script>
+    const domain = '<%= domain %>';
+    const roomName = '<%= roomName %>';
+    const displayName = '<%= displayName.replace(/'/g, "\\'") %>';
+
+    const jitsiApi = new JitsiMeetExternalAPI(domain, {
+      roomName: roomName,
+      width: '100%',
+      height: '100%',
+      parentNode: document.getElementById('jitsiContainer'),
+      configOverrides: {
+        startWithAudioMuted: false,
+        startWithVideoMuted: true,
+        disableVideo: true,
+        disable1On1Mode: false,
+        prejoinPageEnabled: false,
+        toolbarButtons: [
+          'microphone', 'desktop', 'fullscreen',
+          'fodeviceselection', 'hangup', 'profile',
+          'chat', 'raisehand', 'settings',
+          'tileview'
+        ]
+      },
+      interfaceConfigOverrides: {
+        SHOW_JITSI_WATERMARK: false,
+        SHOW_WATERMARK_FOR_GUESTS: false,
+        TOOLBAR_ALWAYS_VISIBLE: true,
+        DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
+        FILM_STRIP_MAX_HEIGHT: 60
+      },
+      userInfo: {
+        displayName: displayName
+      }
+    });
+
+    // Remove waiting message when joined
+    jitsiApi.addListener('videoConferenceJoined', () => {
+      const msg = document.getElementById('waitingMsg');
+      if (msg) msg.style.display = 'none';
+    });
+
+    // Track call duration
+    jitsiApi.addListener('participantLeft', () => {
+      console.log('Participant left');
+    });
+  </script>
+</body>
+</html>

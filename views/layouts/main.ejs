@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title + ' | ' : '' %><%= siteName %></title>
+  <!-- Bootstrap 5 RTL -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+</head>
+<body<%= typeof user !== 'undefined' && user ? ` data-role="${user.role}" data-user-id="${user.id}"` : '' %>>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark shadow-sm" style="background: linear-gradient(135deg, #1a2332 0%, #2a3a5c 100%);">
+    <div class="container">
+      <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+        <div class="nav-logo-wrapper">
+          <div class="nav-logo-ring">
+            <img src="/images/logo.png" alt="دلني" class="nav-logo-img">
+          </div>
+        </div>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link <%= currentPath === '/' ? 'active' : '' %>" href="/">الرئيسية</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/how-it-works">كيف تعمل</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/about">عن المنصة</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link <%= currentPath === '/contact' ? 'active' : '' %>" href="/contact"><i class="bi bi-headset"></i> تواصل معنا</a>
+          </li>
+          <% if (user) { %>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                <i class="bi bi-person-circle"></i> <%= user.name %>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <% if (user.role === 'client') { %>
+                  <li><a class="dropdown-item" href="/client"><i class="bi bi-speedometer2"></i> لوحة العميل</a></li>
+                  <li><a class="dropdown-item" href="/client/invoices"><i class="bi bi-receipt"></i> فواتيري</a></li>
+                <% } else if (user.role === 'consultant') { %>
+                  <li><a class="dropdown-item" href="/consultant"><i class="bi bi-speedometer2"></i> لوحة المستشار</a></li>
+                  <li><a class="dropdown-item" href="/consultant/pricing"><i class="bi bi-coin"></i> أسعاري</a></li>
+                  <li><a class="dropdown-item" href="/consultant/balance"><i class="bi bi-wallet2"></i> رصيدي</a></li>
+                <% } else if (user.role === 'admin' || user.role === 'supervisor') { %>
+                  <li><a class="dropdown-item" href="/admin"><i class="bi bi-speedometer2"></i> لوحة التحكم</a></li>
+                  <li><a class="dropdown-item" href="/admin/consultations"><i class="bi bi-chat-dots"></i> الاستشارات</a></li>
+                  <li><a class="dropdown-item" href="/admin/verification"><i class="bi bi-patch-check"></i> التوثيق</a></li>
+                  <li><a class="dropdown-item" href="/admin/reports"><i class="bi bi-graph-up"></i> التقارير</a></li>
+                  <li><a class="dropdown-item" href="/admin/whatsapp-bulk"><i class="bi bi-whatsapp text-success"></i> واتساب</a></li>
+                <% } %>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-left"></i> تسجيل خروج</a></li>
+              </ul>
+            </li>
+          <% } else { %>
+            <li class="nav-item">
+              <a class="nav-link" href="/login"><i class="bi bi-box-arrow-in-left"></i> دخول</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/register"><i class="bi bi-person-plus"></i> تسجيل</a>
+            </li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash Messages -->
+  <% if (success_msg) { %>
+    <div class="container mt-3">
+      <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill"></i> <%= success_msg %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    </div>
+  <% } %>
+  <% if (error_msg) { %>
+    <div class="container mt-3">
+      <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill"></i> <%= error_msg %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Main Content -->
+  <main>
+    <%- body %>
+  </main>
+
+  <!-- Footer - Navy with Gold accents -->
+  <footer style="background: linear-gradient(180deg, #1a2332 0%, #0f1a2e 100%);margin-top: 60px;position:relative;">
+    <!-- Wavy top -->
+    <div style="position:absolute;top:-30px;left:0;right:0;height:30px;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1440 30%22 preserveAspectRatio=%22none%22><path fill=%22%231a2332%22 d=%22M0,15 C360,30 1080,0 1440,15 L1440,30 L0,30 Z%22/></svg>') repeat-x;background-size:1440px 30px;"></div>
+    <div class="container pt-5 pb-3 text-white">
+      <div class="row g-3">
+        <div class="col-lg-4 mb-3">
+          <h5 class="fw-bold mb-2">
+            <div class="footer-logo-wrapper">
+              <img src="/images/logo.png" alt="دلني" class="footer-logo-img">
+            </div>
+          </h5>
+          <p class="small opacity-75 lh-base">منصة استشارات إلكترونية سعودية تربطك بأفضل المستشارين المتخصصين.</p>
+          <a href="https://wa.me/966500000000" target="_blank" class="btn btn-sm rounded-pill px-3" style="background:#25D366;color:white;border:none;">
+            <i class="bi bi-whatsapp"></i> واتساب: 0500000000
+          </a>
+        </div>
+        <div class="col-4 col-lg-2 mb-3">
+          <h6 class="fw-bold mb-2" style="font-size:0.9rem;">روابط</h6>
+          <ul class="list-unstyled small">
+            <li class="mb-1"><a href="/" class="text-white-50 text-decoration-none">الرئيسية</a></li>
+            <li class="mb-1"><a href="/how-it-works" class="text-white-50 text-decoration-none">كيف تعمل</a></li>
+            <li class="mb-1"><a href="/contact" class="text-white-50 text-decoration-none">تواصل معنا</a></li>
+            <li class="mb-1"><a href="/about" class="text-white-50 text-decoration-none">عن المنصة</a></li>
+          </ul>
+        </div>
+        <div class="col-4 col-lg-3 mb-3">
+          <h6 class="fw-bold mb-2" style="font-size:0.9rem;">سياسات</h6>
+          <ul class="list-unstyled small">
+            <li class="mb-1"><a href="/privacy" class="text-white-50 text-decoration-none">سياسة الخصوصية</a></li>
+            <li class="mb-1"><a href="/terms" class="text-white-50 text-decoration-none">الشروط والأحكام</a></li>
+            <li class="mb-1"><a href="/support" class="text-white-50 text-decoration-none">الدعم الفني</a></li>
+            <li class="mb-1"><a href="/contact" class="text-white-50 text-decoration-none">تواصل معنا</a></li>
+          </ul>
+        </div>
+        <div class="col-4 col-lg-3 mb-3">
+          <h6 class="fw-bold mb-2" style="font-size:0.9rem;">للعملاء</h6>
+          <ul class="list-unstyled small">
+            <li class="mb-1"><a href="/register" class="text-white-50 text-decoration-none">تسجيل جديد</a></li>
+            <li class="mb-1"><a href="/client" class="text-white-50 text-decoration-none">لوحة العميل</a></li>
+            <li class="mb-1"><a href="/client/new" class="text-white-50 text-decoration-none">طلب استشارة</a></li>
+          </ul>
+        </div>
+      </div>
+      <hr class="border-white border-opacity-25 my-3">
+      <div class="text-center">
+        <p class="small opacity-75 mb-0">© 2026 <%= siteName %>. جميع الحقوق محفوظة.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="/js/main.js"></script>
+  <script src="/js/notifications.js"></script>
+</body>
+</html>

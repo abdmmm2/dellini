@@ -1,0 +1,33 @@
+<% 
+// Verification Badge Partial
+// Usage: include('partials/verify-badge', { tier: 'gold', size: 'sm' })
+var vTier = typeof tier !== 'undefined' ? tier : 'none';
+var vSize = typeof size !== 'undefined' ? size : 'sm';
+if (vTier === 'none') return '';
+
+var tierNames = {
+  black: { name: 'موثّق أسود', stars: '15,000' },
+  blue: { name: 'موثّق أزرق', stars: '30,000' },
+  silver: { name: 'موثّق فضي', stars: '50,000' },
+  gold: { name: 'موثّق ذهبي', stars: '80,000' },
+  platinum: { name: 'موثّق بلاتيني', stars: '100,000' }
+};
+var info = tierNames[vTier] || { name: 'موثّق', stars: '' };
+var sizeClass = vSize === 'lg' ? 'verify-badge-lg' : '';
+%>
+<span class="verify-badge verify-<%= vTier %> <%= sizeClass %>" title="<%= info.name %> — <%= info.stars %> نجمة" style="animation-delay: <%= Math.random() * 0.5 %>s">
+  <span class="badge-icon">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
+    </svg>
+  </span>
+  <span class="badge-check">✓</span>
+  <span><%= info.name %></span>
+  <span class="verify-tooltip">
+    <span class="tooltip-star">★</span>
+    <%= info.stars %>
+    <span class="tooltip-star">★</span>
+    <br>
+    <%= info.name %>
+  </span>
+</span>

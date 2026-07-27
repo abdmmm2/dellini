@@ -1,0 +1,139 @@
+<div class="container py-4">
+  <a href="/consultant" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-right"></i> رجوع</a>
+
+  <div class="row">
+    <!-- Balance Card -->
+    <div class="col-lg-4 mb-4">
+      <div class="card bg-primary text-white text-center">
+        <div class="card-body py-4">
+          <div class="small opacity-75">الرصيد الحالي</div>
+          <h1 class="fw-bold mb-0"><%= consultant.balance %> <small class="fs-5">ريال</small></h1>
+          <hr class="border-light">
+          <button class="btn btn-light w-100" data-bs-toggle="modal" data-bs-target="#withdrawModal">
+            <i class="bi bi-cash-stack"></i> طلب سحب
+          </button>
+        </div>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-body">
+          <h6 class="fw-bold"><i class="bi bi-info-circle"></i> معلومات</h6>
+          <ul class="small text-muted mb-0">
+            <li>الحد الأدنى للسحب: 100 ريال</li>
+            <li>عمولة المنصة: 25%</li>
+            <li>يتم مراجعة طلبات السحب من قبل الإدارة</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Withdrawal history -->
+      <div class="card mt-3">
+        <div class="card-header bg-white">
+          <h6 class="fw-bold mb-0">طلبات السحب السابقة</h6>
+        </div>
+        <div class="card-body p-0">
+          <% if (withdrawals.length === 0) { %>
+            <div class="text-center py-3 text-muted small">لا توجد طلبات سحب</div>
+          <% } else { %>
+            <ul class="list-group list-group-flush">
+              <% withdrawals.forEach(w => { %>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="fw-bold"><%= w.amount %> ريال</div>
+                    <div class="small text-muted"><%= new Date(w.created_at).toLocaleDateString('ar-SA') %></div>
+                  </div>
+                  <span class="badge <%= w.status === 'approved' ? 'bg-success' : w.status === 'rejected' ? 'bg-danger' : 'bg-warning' %>">
+                    <%= w.status === 'pending' ? 'قيد الانتظار' : w.status === 'approved' ? 'تمت الموافقة' : 'مرفوض' %>
+                  </span>
+                </li>
+              <% }) %>
+            </ul>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions -->
+    <div class="col-lg-8 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="fw-bold mb-0"><i class="bi bi-currency-exchange"></i> سجل الأرباح</h5>
+        </div>
+        <div class="card-body p-0">
+          <% if (transactions.length === 0) { %>
+            <div class="text-center py-5">
+              <i class="bi bi-cash" style="font-size: 3rem; color: #dee2e6;"></i>
+              <p class="text-muted mt-2">لا توجد معاملات بعد</p>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>الوصف</th>
+                    <th>المبلغ</th>
+                    <th>النوع</th>
+                    <th>التاريخ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% transactions.forEach(t => { %>
+                    <tr>
+                      <td>#<%= t.id %></td>
+                      <td><%= t.description || t.title || t.question?.substring(0, 40) || '—' %></td>
+                      <td class="fw-bold <%= t.type === 'withdrawal' ? 'text-danger' : 'text-success' %>">
+                        <%= t.type === 'withdrawal' ? '-' : '+' %><%= t.amount %> ريال
+                      </td>
+                      <td>
+                        <% if (t.type === 'payment') { %>
+                          <span class="badge bg-success"><i class="bi bi-plus"></i> أرباح</span>
+                        <% } else if (t.type === 'withdrawal') { %>
+                          <span class="badge bg-danger"><i class="bi bi-dash"></i> سحب</span>
+                        <% } else { %>
+                          <span class="badge bg-info"><%= t.type %></span>
+                        <% } %>
+                      </td>
+                      <td class="small"><%= new Date(t.created_at).toLocaleDateString('ar-SA') %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Withdraw Modal -->
+<div class="modal fade" id="withdrawModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">طلب سحب أرباح</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/consultant/withdraw" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">المبلغ المطلوب سحبه</label>
+            <input type="number" name="amount" class="form-control" min="100" max="<%= consultant.balance %>" step="10"
+              placeholder="أقل مبلغ 100 ريال" required>
+            <div class="form-text">الرصيد المتاح: <strong><%= consultant.balance %> ريال</strong></div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">تفاصيل الحساب البنكي</label>
+            <textarea name="bank_account_details" class="form-control" rows="3" 
+              placeholder="رقم الحساب - اسم البank - الآيبان"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> إرسال الطلب</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

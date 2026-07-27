@@ -1,0 +1,118 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="bi bi-cash-stack"></i> طلبات السحب</h3>
+    <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-right"></i> رجوع</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>المستشار</th>
+              <th>البريد</th>
+              <th>المبلغ</th>
+              <th>الرصيد الحالي</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (withdrawals.length === 0) { %>
+              <tr><td colspan="8" class="text-center py-4 text-muted">لا توجد طلبات سحب</td></tr>
+            <% } %>
+            <% withdrawals.forEach(w => { %>
+              <tr class="<%= w.status === 'pending' ? 'table-warning' : '' %>">
+                <td><%= w.id %></td>
+                <td class="fw-bold"><%= w.consultant_name %></td>
+                <td><%= w.email %></td>
+                <td class="fw-bold text-danger"><%= w.amount %> ريال</td>
+                <td><%= w.balance %> ريال</td>
+                <td>
+                  <span class="badge <%= w.status === 'pending' ? 'bg-warning' : w.status === 'approved' ? 'bg-success' : 'bg-danger' %>">
+                    <%= w.status === 'pending' ? 'قيد الانتظار' : w.status === 'approved' ? 'تمت الموافقة' : 'مرفوض' %>
+                  </span>
+                </td>
+                <td class="small"><%= new Date(w.created_at).toLocaleDateString('ar-SA') %></td>
+                <td>
+                  <% if (w.status === 'pending') { %>
+                    <div class="d-flex gap-1">
+                      <button class="btn btn-sm btn-success" data-bs-toggle="modal"
+                        data-bs-target="#approveModal<%= w.id %>">
+                        <i class="bi bi-check-lg"></i> موافقة
+                      </button>
+                      <button class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                        data-bs-target="#rejectModal<%= w.id %>">
+                        <i class="bi bi-x-lg"></i> رفض
+                      </button>
+                    </div>
+                  <% } else { %>
+                    <%= w.admin_note ? w.admin_note : '—' %>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Approve Modals -->
+<% withdrawals.filter(w => w.status === 'pending').forEach(w => { %>
+  <div class="modal fade" id="approveModal<%= w.id %>" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">الموافقة على طلب سحب</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form action="/admin/withdrawals/process" method="POST">
+          <input type="hidden" name="request_id" value="<%= w.id %>">
+          <input type="hidden" name="action" value="approve">
+          <div class="modal-body">
+            <p>الموافقة على سحب <strong class="text-danger"><%= w.amount %> ريال</strong> للمستشار <strong><%= w.consultant_name %></strong></p>
+            <div class="mb-3">
+              <label class="form-label">ملاحظة (اختياري)</label>
+              <textarea name="admin_note" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+            <button type="submit" class="btn btn-success">تأكيد الموافقة</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="rejectModal<%= w.id %>" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">رفض طلب السحب</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form action="/admin/withdrawals/process" method="POST">
+          <input type="hidden" name="request_id" value="<%= w.id %>">
+          <input type="hidden" name="action" value="reject">
+          <div class="modal-body">
+            <p>رفض سحب <strong class="text-danger"><%= w.amount %> ريال</strong> للمستشار <strong><%= w.consultant_name %></strong></p>
+            <div class="mb-3">
+              <label class="form-label">سبب الرفض *</label>
+              <textarea name="admin_note" class="form-control" rows="2" required></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+            <button type="submit" class="btn btn-danger">تأكيد الرفض</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% }) %>

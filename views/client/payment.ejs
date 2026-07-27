@@ -1,0 +1,414 @@
+<div class="container py-4">
+  <div class="step-indicator">
+    <div class="step completed">
+      <div class="step-number">✓</div>
+      <div class="step-label">اختر القسم</div>
+    </div>
+    <div class="step-connector completed"></div>
+    <div class="step completed">
+      <div class="step-number">✓</div>
+      <div class="step-label">اختر المستشار</div>
+    </div>
+    <div class="step-connector completed"></div>
+    <div class="step completed">
+      <div class="step-number">✓</div>
+      <div class="step-label">اكتب استشارتك</div>
+    </div>
+    <div class="step-connector completed"></div>
+    <div class="step active">
+      <div class="step-number">4</div>
+      <div class="step-label">الدفع</div>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="fw-bold mb-0"><i class="bi bi-credit-card"></i> تأكيد الدفع</h5>
+        </div>
+        <div class="card-body p-4">
+          <!-- Summary -->
+          <div class="mb-4">
+            <h6 class="fw-bold">ملخص الاستشارة</h6>
+            <div class="bg-light p-3 rounded">
+              <div class="row mb-2">
+                <div class="col-6 text-muted">القسم</div>
+                <div class="col-6 text-start fw-bold"><%= consultation.category_name %></div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-6 text-muted">التفاصيل <%= consultation.is_urgent ? '<span class="badge bg-danger">عاجل</span>' : '' %></div>
+                <div class="col-6 text-start fw-bold"><%= consultation.title || consultation.question.substring(0, 50) + '...' %></div>
+              </div>
+              <% if (consultation.is_urgent) { %>
+                <div class="row mb-2">
+                  <div class="col-6 text-muted">عاجلة</div>
+                  <div class="col-6 text-start"><span class="badge bg-danger">⚡ +50%</span></div>
+                </div>
+              <% } %>
+              <% if (consultation.type === 'voice') { %>
+                <div class="row mb-2">
+                  <div class="col-6 text-muted">نوع الاستشارة</div>
+                  <div class="col-6 text-start"><span class="badge bg-primary"><i class="bi bi-telephone"></i> مكالمة صوتية</span></div>
+                </div>
+                <div class="row mb-2">
+                  <div class="col-6 text-muted">المدة</div>
+                  <div class="col-6 text-start fw-bold"><%= consultation.duration_minutes %> دقيقة</div>
+                </div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Payment Details -->
+          <div class="mb-4">
+            <h6 class="fw-bold">تفاصيل الدفع</h6>
+            <div class="bg-light p-3 rounded">
+              <div class="row mb-2">
+                <div class="col-6 text-muted"><%= consultation.type === 'voice' ? 'رسوم المكالمة' : 'رسوم الاستشارة' %></div>
+                <div class="col-6 text-start fw-bold"><%= consultation.amount %> ريال</div>
+              </div>
+              <div class="row mb-2">
+                <div class="col-6 text-muted">عمولة المنصة (25%)</div>
+                <div class="col-6 text-start"><span class="text-danger"><%= platformFee %> ريال</span></div>
+              </div>
+              <hr>
+              <div class="row">
+                <div class="col-6"><strong>صافي المستشار</strong></div>
+                <div class="col-6 text-start"><strong class="text-success"><%= consultantEarns %> ريال</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Method Selection -->
+          <div class="mb-4">
+            <h6 class="fw-bold"><i class="bi bi-credit-card-2-front"></i> اختر طريقة الدفع</h6>
+            <div class="payment-methods">
+              <!-- STC Pay - Show only if enabled -->
+              <% if (settings && settings.stcpay_enabled !== '0') { %>
+              <div class="card payment-method-card mb-2" id="method-stcpay" onclick="selectMethod('stcpay')">
+                <div class="card-body py-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="payment-radio">
+                      <div class="radio-circle" id="radio-stcpay"></div>
+                    </div>
+                    <div class="payment-logo">
+                      <img src="https://img.icons8.com/color/48/000000/samsung-s9.png" height="36" alt="STC Pay"
+                        style="filter: hue-rotate(200deg) brightness(1.2);">
+                    </div>
+                    <div class="flex-grow-1">
+                      <strong>STC Pay</strong>
+                      <div class="small text-muted">ادفع عبر تطبيق STC Pay مباشرة</div>
+                    </div>
+                    <i class="bi bi-phone fs-3 text-success"></i>
+                  </div>
+                </div>
+              </div>
+              <% } %>
+
+              <!-- بطاقة ائتمان (Stripe) - Show only if enabled -->
+              <% if (settings && settings.stripe_enabled !== '0') { %>
+              <div class="card payment-method-card mb-2" id="method-stripe" onclick="selectMethod('stripe')">
+                <div class="card-body py-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="payment-radio">
+                      <div class="radio-circle" id="radio-stripe"></div>
+                    </div>
+                    <div class="payment-logo">
+                      <img src="https://img.icons8.com/color/48/000000/visa.png" height="30" alt="Visa">
+                      <img src="https://img.icons8.com/color/48/000000/mastercard.png" height="30" alt="Mastercard">
+                    </div>
+                    <div class="flex-grow-1">
+                      <strong>بطاقة ائتمان</strong>
+                      <div class="small text-muted">Visa, Mastercard, Mada</div>
+                    </div>
+                    <i class="bi bi-credit-card fs-3 text-primary"></i>
+                  </div>
+                </div>
+              </div>
+              <% } %>
+
+              <!-- تحويل بنكي - Show only if enabled -->
+              <% if (settings && settings.bank_transfer_enabled !== '0') { %>
+              <div class="card payment-method-card mb-2" id="method-bank" onclick="selectMethod('bank')">
+                <div class="card-body py-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="payment-radio">
+                      <div class="radio-circle" id="radio-bank"></div>
+                    </div>
+                    <div class="payment-logo">
+                      <span class="badge bg-success px-3 py-2"><i class="bi bi-bank"></i></span>
+                    </div>
+                    <div class="flex-grow-1">
+                      <strong>تحويل بنكي</strong>
+                      <div class="small text-muted">حوّل المبلغ وأرفق إيصال الدفع</div>
+                    </div>
+                    <i class="bi bi-bank fs-3 text-success"></i>
+                  </div>
+                </div>
+              </div>
+              <% } %>
+
+              <!-- محاكاة (اختبار) - Show only if enabled -->
+              <% if (settings && settings.simulate_enabled !== '0') { %>
+              <div class="card payment-method-card mb-2" id="method-simulate" onclick="selectMethod('simulate')">
+                <div class="card-body py-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="payment-radio">
+                      <div class="radio-circle" id="radio-simulate"></div>
+                    </div>
+                    <div class="payment-logo">
+                      <span class="badge bg-warning text-dark px-3 py-2">🧪 تجريبي</span>
+                    </div>
+                    <div class="flex-grow-1">
+                      <strong>دفع تجريبي</strong>
+                      <div class="small text-muted">لأغراض الاختبار فقط — بدون رسوم حقيقية</div>
+                    </div>
+                    <i class="bi bi-flask fs-3 text-warning"></i>
+                  </div>
+                </div>
+              </div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- STC Pay Phone Input (shown when STC Pay is selected) -->
+          <div id="stcpay-section" class="mb-4 d-none">
+            <label class="form-label fw-bold"><i class="bi bi-phone text-success"></i> رقم الجوال المسجل في STC Pay</label>
+            <div class="input-group">
+              <span class="input-group-text">+966</span>
+              <input type="text" id="stcpayPhone" class="form-control" placeholder="5xxxxxxxx" value="<%= user.phone ? user.phone.replace(/^0/, '') : '' %>">
+            </div>
+            <div class="form-text">أدخل رقم جوالك المسجل في تطبيق STC Pay</div>
+          </div>
+
+          <!-- Pay Button -->
+          <form id="paymentForm" method="POST" action="/client/pay/<%= consultation.id %>">
+            <button type="submit" id="payBtn" class="btn btn-success btn-lg w-100">
+              <i class="bi bi-credit-card"></i> <span id="payText">ادفع الآن — <strong><%= consultation.amount %> ريال</strong></span>
+              <span id="paySpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+            </button>
+          </form>
+
+          <!-- Payment Logos -->
+          <div class="mt-3">
+            <div class="d-flex justify-content-center gap-3 align-items-center">
+              <img src="https://img.icons8.com/color/48/000000/visa.png" height="28" alt="Visa">
+              <img src="https://img.icons8.com/color/48/000000/mastercard.png" height="28" alt="Mastercard">
+              <img src="https://img.icons8.com/color/48/000000/amex.png" height="28" alt="Amex">
+              <span class="badge bg-success px-3 py-1">مدى</span>
+              <span class="text-muted small align-self-center">🔒 دفع آمن</span>
+            </div>
+          </div>
+
+          <!-- STC Pay Status (shown during processing) -->
+          <div id="stcpayStatus" class="mt-3 d-none">
+            <div class="alert alert-success text-center" id="stcpaySuccessAlert">
+              <i class="bi bi-check-circle-fill fs-4"></i>
+              <h6 class="mt-2 fw-bold">تم إرسال طلب الدفع</h6>
+              <p id="stcpayStatusMsg" class="mb-2">يرجى فتح تطبيق STC Pay وتأكيد الدفع</p>
+              <button class="btn btn-success mt-2" onclick="verifySTCPay()">
+                <i class="bi bi-arrow-repeat"></i> تأكيد الدفع
+              </button>
+              <div id="stcpaySpinner" class="mt-2 d-none">
+                <div class="spinner-border spinner-border-sm text-success"></div>
+                <span class="small text-muted">جارِ التحقق...</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3 text-center">
+            <a href="/client" class="text-muted small"><i class="bi bi-x-circle"></i> إلغاء والعودة</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.payment-method-card {
+  cursor: pointer;
+  border: 2px solid #e9ecef;
+  transition: all 0.2s;
+}
+.payment-method-card:hover {
+  border-color: #adb5bd;
+  background: #f8f9fa;
+}
+.payment-method-card.active {
+  border-color: var(--primary);
+  background: #f0f7ff;
+}
+.payment-radio {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.radio-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #adb5bd;
+  transition: all 0.2s;
+}
+.payment-method-card.active .radio-circle {
+  border-color: var(--primary);
+  border-width: 6px;
+}
+#stcpay-section {
+  background: #f0faf0;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #d4edda;
+}
+</style>
+
+<script>
+let selectedMethod = 'simulate';
+
+function selectMethod(method) {
+  selectedMethod = method;
+  
+  // Remove active from all
+  document.querySelectorAll('.payment-method-card').forEach(el => el.classList.remove('active'));
+  
+  // Add active to selected
+  document.getElementById('method-' + method).classList.add('active');
+
+  // Show/hide STC Pay phone input
+  const stcpaySection = document.getElementById('stcpay-section');
+  if (stcpaySection) stcpaySection.classList.toggle('d-none', method !== 'stcpay');
+  
+  // Update button text
+  const payText = document.getElementById('payText');
+  const amount = '<%= consultation.amount %>';
+  if (method === 'stcpay') {
+    payText.innerHTML = `ادفع عبر STC Pay — <strong>${amount} ريال</strong>`;
+  } else if (method === 'stripe') {
+    payText.innerHTML = `ادفع ببطاقة ائتمان — <strong>${amount} ريال</strong>`;
+  } else if (method === 'bank') {
+    payText.innerHTML = `تحويل بنكي — <strong>${amount} ريال</strong>`;
+  } else {
+    payText.innerHTML = `دفع تجريبي — <strong>${amount} ريال</strong>`;
+  }
+}
+
+// Intercept form submit — handle each method
+document.getElementById('paymentForm').addEventListener('submit', async function(e) {
+  if (selectedMethod === 'simulate') return; // allow normal form POST
+
+  e.preventDefault(); // block normal submit for other methods
+
+  const btn = document.getElementById('payBtn');
+  const text = document.getElementById('payText');
+  const spinner = document.getElementById('paySpinner');
+  
+  btn.disabled = true;
+  text.textContent = 'جارِ الاتصال...';
+  spinner.classList.remove('d-none');
+
+  const consultationId = '<%= consultation.id %>';
+
+  try {
+    if (selectedMethod === 'stcpay') {
+      const phone = document.getElementById('stcpayPhone').value.trim();
+      if (!phone || phone.length < 9) {
+        alert('الرجاء إدخال رقم جوال صحيح');
+        btn.disabled = false;
+        text.innerHTML = `ادفع عبر STC Pay — <strong><%= consultation.amount %> ريال</strong>`;
+        spinner.classList.add('d-none');
+        return;
+      }
+
+      const response = await fetch(`/stcpay/initiate/${consultationId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: '966' + phone.replace(/^0/, '') })
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        document.getElementById('paymentForm').classList.add('d-none');
+        document.getElementById('stcpayStatus').classList.remove('d-none');
+        document.getElementById('stcpayStatusMsg').textContent = 
+          'تم إرسال طلب الدفع عبر STC Pay. يرجى فتح التطبيق وتأكيد الدفع.';
+      } else {
+        alert(data.error || 'فشل عملية الدفع');
+        btn.disabled = false;
+        text.innerHTML = `ادفع عبر STC Pay — <strong><%= consultation.amount %> ريال</strong>`;
+        spinner.classList.add('d-none');
+      }
+    } 
+    else if (selectedMethod === 'stripe') {
+      const response = await fetch(`/stripe/create-checkout/${consultationId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await response.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.simulate) {
+        window.location.href = data.redirect;
+      } else if (data.error) {
+        alert(data.error);
+        btn.disabled = false;
+        text.innerHTML = `ادفع ببطاقة ائتمان — <strong><%= consultation.amount %> ريال</strong>`;
+        spinner.classList.add('d-none');
+      }
+    }
+    else if (selectedMethod === 'bank') {
+      window.location.href = `/bank-transfer/${consultationId}`;
+    }
+  } catch (err) {
+    alert('حدث خطأ في الاتصال');
+    btn.disabled = false;
+    spinner.classList.add('d-none');
+  }
+});
+
+async function verifySTCPay() {
+  document.getElementById('stcpaySpinner').classList.remove('d-none');
+  
+  const consultationId = '<%= consultation.id %>';
+
+  try {
+    const response = await fetch(`/stcpay/verify/${consultationId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await response.json();
+
+    if (data.success) {
+      window.location.href = data.redirect || '/client';
+    } else {
+      alert(data.error || 'لم يتم تأكيد الدفع بعد');
+    }
+  } catch (err) {
+    alert('حدث خطأ');
+  }
+  
+  document.getElementById('stcpaySpinner').classList.add('d-none');
+}
+
+// Select first available method on load
+document.addEventListener('DOMContentLoaded', () => {
+  const availableMethods = ['stripe', 'stcpay', 'bank', 'simulate'];
+  let selected = false;
+  for (const m of availableMethods) {
+    const el = document.getElementById('method-' + m);
+    if (el) {
+      selectMethod(m);
+      selected = true;
+      return;
+    }
+  }
+  // Fallback — if no method found
+  if (!selected) {
+    document.getElementById('payBtn').disabled = true;
+    document.getElementById('payText').textContent = '⚠️ لا توجد وسيلة دفع مفعلة';
+  }
+});
+</script>
