@@ -39,9 +39,8 @@ router.post('/register', (req, res) => {
     }
 
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const userRole = role === 'consultant' ? 'consultant' : role === 'admin' ? 'admin' : 'client';
-    // Admin registrations must be approved by existing admin
-    // For now, direct admin registration is enabled
+    // منع تسجيل حساب إداري من صفحة التسجيل (للأمان)
+    const userRole = (role === 'consultant') ? 'consultant' : 'client';
 
     const result = db.runStmt(
       'INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, ?)'

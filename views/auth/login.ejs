@@ -26,6 +26,15 @@
               </div>
             </div>
 
+            <div class="mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="rememberMe">
+                <label class="form-check-label" for="rememberMe">
+                  <i class="bi bi-disc"></i> حفظ بيانات الدخول
+                </label>
+              </div>
+            </div>
+
             <div class="mb-3 text-start">
               <a href="/forgot-password" class="text-muted small">نسيت كلمة المرور؟</a>
             </div>
@@ -43,3 +52,29 @@
     </div>
   </div>
 </div>
+
+<script>
+// Load saved credentials on page load
+(function() {
+  const savedEmail = localStorage.getItem('dellini_email');
+  const savedPass = localStorage.getItem('dellini_pass');
+  if (savedEmail) {
+    document.querySelector('input[name="email"]').value = savedEmail;
+    document.getElementById('rememberMe').checked = true;
+    if (savedPass) document.querySelector('input[name="password"]').value = savedPass;
+  }
+})();
+
+// Save credentials on form submit
+document.querySelector('form').addEventListener('submit', function() {
+  if (document.getElementById('rememberMe').checked) {
+    const email = document.querySelector('input[name="email"]').value;
+    const pass = document.querySelector('input[name="password"]').value;
+    localStorage.setItem('dellini_email', email);
+    localStorage.setItem('dellini_pass', pass);
+  } else {
+    localStorage.removeItem('dellini_email');
+    localStorage.removeItem('dellini_pass');
+  }
+});
+</script>
