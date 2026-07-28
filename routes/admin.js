@@ -1336,6 +1336,12 @@ router.post('/backup/create', requireAdmin, (req, res) => {
     
     // Get current DB file
     const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'dellini.db');
+    
+    // Make sure backups dir exists
+    if (!fs.existsSync(backupsPath)) {
+      fs.mkdirSync(backupsPath, { recursive: true });
+    }
+    
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const backupName = `dellini-backup-${timestamp}.db`;
     const backupPath = path.join(backupsPath, backupName);
@@ -1345,11 +1351,11 @@ router.post('/backup/create', requireAdmin, (req, res) => {
       fs.copyFileSync(DB_PATH, backupPath);
       req.session.success_msg = `✅ تم إنشاء النسخة الاحتياطية: ${backupName}`;
     } else {
-      req.session.error_msg = '❌ قاعدة البيانات غير موجودة';
+      req.session.error_msg = `❌ قاعدة البيانات غير موجودة في: ${DB_PATH}`;
     }
   } catch(err) {
-    console.error('Backup error:', err);
-    req.session.error_msg = '❌ فشل إنشاء النسخة الاحتياطية';
+    console.error('❌ Backup error:', err);
+    req.session.error_msg = `❌ فشل إنشاء النسخة: ${err.message}`;
   }
   res.redirect('/admin/backup');
 });
