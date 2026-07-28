@@ -137,7 +137,7 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
           `, userId, imagePath);
         }
       }
-    // 📧 Send verification code
+    // 📧 Send verification code (email) + 📱 WhatsApp alternative
     const { sendVerificationCode, generateCode } = require('../utils/email');
     const verifCode = generateCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
@@ -145,8 +145,15 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
       userId, email, verifCode, expiresAt);
     sendVerificationCode(email, name, verifCode).catch(() => {});
     
-    req.session.success_msg = 'تم إنشاء الحساب! تحقق من بريدك الإلكتروني للتفعيل';
-    res.redirect('/verify?email=' + encodeURIComponent(email));
+    // WhatsApp link for verification
+    const waNumber = formattedPhone || '966500000000';
+    const waMsg = encodeURIComponent('دلني - رمز التفعيل: ' + verifCode);
+    const waLink = 'https://wa.me/' + waNumber + '?text=' + waMsg;
+    
+    req.session.success_msg = 'تم إنشاء الحساب! رمز التفعيل أُرسل لبريدك الإلكتروني';
+    req.session.verifCode = verifCode; // Store temporarily for WhatsApp fallback
+    
+    res.redirect('/verify?email=' + encodeURIComponent(email) + '&wa=' + waLink + '&code=' + verifCode);
   } catch (err) {
     console.error(err);
     req.session.error_msg = 'حدث خطأ أثناء إنشاء الحساب';
@@ -160,11 +167,13 @@ router.get('/login', (req, res) => {
   res.render('auth/login', { title: 'تسجيل الدخول' });
 });
 
-// ✅ Email verification page
+// ✅ Email/WhatsApp verification page
 router.get('/verify', (req, res) => {
   const email = req.query.email || '';
+  const wa = req.query.wa || '';
+  const code = req.query.code || '';
   if (!email) return res.redirect('/login');
-  res.render('auth/verify', { title: 'تأكيد البريد', email });
+  res.render('auth/verify', { title: 'تأكيد البريد', email, wa, code });
 });
 
 router.post('/verify', (req, res) => {
