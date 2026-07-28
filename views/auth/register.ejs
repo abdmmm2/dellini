@@ -83,7 +83,9 @@
                   <button type="button" class="btn btn-outline-primary btn-sm" onclick="openIdCamera()">
                     <i class="bi bi-camera"></i> تصوير الهوية
                   </button>
-                  <p class="small text-muted mt-1 mb-0">أو اختر من المعرض</p>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('nationalIdInput').click()">
+                    <i class="bi bi-folder"></i> اختيار من المعرض
+                  </button>
                 </div>
                 <!-- Camera preview -->
                 <div id="idCameraPreview" style="display:none">
@@ -106,8 +108,14 @@
                     </button>
                   </div>
                 </div>
-                <input type="file" name="national_id" id="nationalIdInput" accept="image/*" class="form-control form-control-sm mt-2" style="display:none">
+                <input type="file" name="national_id" id="nationalIdInput" accept="image/*" class="form-control form-control-sm mt-2" style="display:none" onchange="previewGalleryFile(event)">
                 <input type="hidden" name="id_photo_data" id="idPhotoData">
+                <div id="galleryPreview" style="display:none" class="mt-2">
+                  <img id="galleryImg" style="width:100%;max-height:200px;border-radius:12px">
+                  <button type="button" class="btn btn-outline-primary btn-sm mt-1" onclick="clearGalleryFile()">
+                    <i class="bi bi-x-lg"></i> إزالة
+                  </button>
+                </div>
                 <small class="text-muted mt-1">صور الهوية مشفرة وآمنة 🔒</small>
               </div>
             </div>
@@ -152,6 +160,23 @@
             function toggleIdUpload() {
               const isClient = document.getElementById('roleClient').checked;
               document.getElementById('idUploadSection').style.display = isClient ? 'block' : 'none';
+            }
+            function previewGalleryFile(e) {
+              const file = e.target.files[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                  document.getElementById('galleryImg').src = ev.target.result;
+                  document.getElementById('galleryPreview').style.display = 'block';
+                  document.getElementById('idCameraBtn').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+              }
+            }
+            function clearGalleryFile() {
+              document.getElementById('nationalIdInput').value = '';
+              document.getElementById('galleryPreview').style.display = 'none';
+              document.getElementById('idCameraBtn').style.display = 'block';
             }
             toggleIdUpload();
             </script>

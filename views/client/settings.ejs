@@ -23,7 +23,9 @@
                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="openIdCamera()">
                   <i class="bi bi-camera"></i> تصوير الهوية
                 </button>
-                <p class="small text-muted mt-1 mb-0">أو اختر من المعرض</p>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('nationalIdInput').click()">
+                  <i class="bi bi-folder"></i> اختيار من المعرض
+                </button>
               </div>
               <div id="idCameraPreview" style="display:none">
                 <video id="idVideo" autoplay playsinline style="width:100%;max-height:250px;border-radius:12px;background:#000"></video>
