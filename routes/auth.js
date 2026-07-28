@@ -137,6 +137,7 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
           `, userId, imagePath);
         }
       }
+    }
     // 📧 Send verification code (email) + 📱 WhatsApp alternative
     const { sendVerificationCode, generateCode } = require('../utils/email');
     const verifCode = generateCode();
