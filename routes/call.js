@@ -58,6 +58,7 @@ router.get('/:consultationId', requireLogin, (req, res) => {
   rows.forEach(r => { settings[r.key] = r.value; });
 
   const domain = settings.voice_app_id || 'meet.jit.si'; // default to public Jitsi
+  const meetingUrl = `https://${domain}/${roomName}`;
 
   res.render('call', {
     title: `مكالمة #${consultation.id}`,
@@ -65,6 +66,7 @@ router.get('/:consultationId', requireLogin, (req, res) => {
     roomName,
     displayName,
     domain,
+    meetingUrl,
     userRole: req.session.user.role,
     backUrl: isClient ? `/client/consultation/${consultation.id}` : `/consultant/consultation/${consultation.id}`,
     layout: false  // No layout for call page

@@ -95,6 +95,15 @@
     <small>غرفة: <strong><%= roomName %></strong> | استشارة #<%= consultation.id %></small>
   </div>
 
+  <!-- Direct meeting link (reliable on mobile) -->
+  <div class="text-center py-3" style="background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.05);">
+    <p class="small mb-2 text-muted">إذا لم تفتح المكالمة تلقائيًا، اضغط الزر التالي:</p>
+    <a href="<%= meetingUrl %>" target="_blank" class="btn btn-success btn-lg px-4" rel="noopener" id="joinBtn">
+      <i class="bi bi-telephone-fill"></i> انضم إلى المكالمة
+    </a>
+    <p class="small text-muted mt-2 mb-0">يفتح في نافذة جديدة أو تطبيق Jitsi Meet</p>
+  </div>
+
   <div id="jitsiContainer">
     <div class="waiting-msg" id="waitingMsg">
       <div class="loading-spinner"></div>
