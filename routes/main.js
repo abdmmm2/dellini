@@ -18,7 +18,8 @@ router.get('/', (req, res) => {
     LIMIT 6
   `);
 
-  // Get online consultants (active in last 10 min OR marked online)
+  // Get online consultants (shows all verified, available consultants)
+  // Green indicator logic: last_active within 5 min = 🟢, otherwise ⚪
   const onlineConsultants = db.all(`
     SELECT c.*, u.name as user_name, u.avatar, u.is_online, u.last_active,
       cat.name_ar as category_name, cat.icon as category_icon,
@@ -27,8 +28,7 @@ router.get('/', (req, res) => {
     JOIN users u ON u.id = c.user_id
     LEFT JOIN consultant_categories cc ON cc.consultant_id = c.id
     LEFT JOIN categories cat ON cat.id = cc.category_id
-    WHERE c.is_verified = 1 AND c.is_available = 1 
-      AND (u.is_online = 1 OR u.last_active > datetime('now', '-10 minutes'))
+    WHERE c.is_verified = 1 AND c.is_available = 1
     GROUP BY c.id
     ORDER BY u.last_active DESC
     LIMIT 8
