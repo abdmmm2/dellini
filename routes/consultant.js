@@ -45,10 +45,19 @@ router.get('/', (req, res) => {
     total: consultations.length,
     pending: consultations.filter(c => c.status === 'assigned' || c.status === 'paid').length,
     answered: consultations.filter(c => c.status === 'answered').length,
-    closed: consultations.filter(c => c.status === 'closed').length
+    closed: consultations.filter(c => c.status === 'closed').length,
+    ratingCount: 0,
+    ratingAvg: 0,
   };
 
-  res.render('consultant/dashboard', { title: 'لوحة المستشار', consultations, stats, consultant: req.consultant });
+  // Get rating stats
+  const ratingData = db.get(`SELECT COUNT(*) as count, ROUND(AVG(rating), 1) as avg FROM consultations WHERE consultant_id = ? AND status = 'closed' AND rating IS NOT NULL`, consultantId);
+  if (ratingData) {
+    stats.ratingCount = ratingData.count || 0;
+    stats.ratingAvg = ratingData.avg || 0;
+  }
+
+  res.render('consultant/dashboard', { title: 'لوحة المستشار', consultations, stats, consultant: req.consultant, userName: req.session.user.name });
 });
 
 // My pricing
