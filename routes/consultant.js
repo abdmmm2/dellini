@@ -90,19 +90,19 @@ router.post('/pricing', (req, res) => {
   } else if (action === 'voice_toggle') {
     const enabled = voice_enabled === '1' ? 1 : 0;
     if (existing) {
-      db.runStmt("UPDATE consultant_categories SET voice_enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", enabled, existing.id);
+      db.runStmt("UPDATE consultant_categories SET voice_enabled = ? WHERE id = ?", enabled, existing.id);
     } else {
       db.runStmt("INSERT INTO consultant_categories (consultant_id, category_id, voice_enabled) VALUES (?, ?, ?)", consultantId, category_id, enabled);
     }
     req.session.success_msg = enabled ? 'تم تفعيل المكالمات الصوتية للقسم ✅' : 'تم إلغاء تفعيل المكالمات الصوتية ❌';
   } else if (action === 'voice_price') {
     if (existing) {
-      db.runStmt("UPDATE consultant_categories SET voice_price_per_minute = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      db.runStmt("UPDATE consultant_categories SET voice_price_per_minute = ? WHERE id = ?",
         parseFloat(voice_price_per_min) || 5, existing.id);
     }
     req.session.success_msg = 'تم تحديث سعر الدقيقة الصوتية';
   } else if (existing) {
-    db.runStmt("UPDATE consultant_categories SET price = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", price, existing.id);
+    db.runStmt("UPDATE consultant_categories SET price = ? WHERE id = ?", price, existing.id);
     req.session.success_msg = 'تم تحديث السعر بنجاح';
   } else {
     db.runStmt("INSERT INTO consultant_categories (consultant_id, category_id, price) VALUES (?, ?, ?)", consultantId, category_id, price);
