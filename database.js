@@ -281,32 +281,6 @@ async function initializeDatabase() {
   // Mark all verified consultants as online (checked every startup)
   try { db._rawRun("UPDATE users SET is_online = 1, last_active = datetime('now') WHERE role = 'consultant' AND id IN (SELECT user_id FROM consultants WHERE is_verified = 1)"); } catch(e) {}
 
-  // Auto-create "استشارات حقوقية" category + services if missing
-  try {
-    const catResult = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
-    let catId;
-    if (!catResult.length || !catResult[0].values.length) {
-      db.runStmt("INSERT INTO categories (name_ar, description, icon, sort_order) VALUES (?, ?, ?, ?)",
-        'استشارات حقوقية', 'استشارات قانونية وحقوقية', 'bi-bank', 6);
-      const r = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
-      catId = r[0].values[0][0];
-    } else {
-      catId = catResult[0].values[0][0];
-    }
-    // Check if services already exist under this category
-    const existingServices = db.exec("SELECT COUNT(*) as c FROM services WHERE category_id = " + catId);
-    if (existingServices[0].values[0][0] == 0) {
-      const svcs = ['استشارة قانونية', 'حضور جلسة', 'صياغة عقد',
-        'مذكرة أو تحرير عقد', 'لائحة اعتراضية', 'توكيل محامي',
-        'مراجعة دوائر حكومية', 'التوثيق'];
-      svcs.forEach((name, i) => {
-        db.runStmt("INSERT INTO services (category_id, name_ar, description, icon, sort_order) VALUES (?, ?, ?, ?, ?)",
-          catId, name, name, 'bi-file-text', i);
-      });
-      console.log('📁 8 خدمات حقوقية منشأة تلقائيًا');
-    }
-  } catch(e) { console.error('Error creating legal services:', e); }
-
   // Bank transfers table
   db._rawRun(`
     CREATE TABLE IF NOT EXISTS bank_transfers (
@@ -416,6 +390,30 @@ async function initializeDatabase() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Auto-create "استشارات حقوقية" category + services (every startup, after all tables exist)
+  try {
+    const catResult = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
+    let catId;
+    if (!catResult.length || !catResult[0].values.length) {
+      db.runStmt("INSERT INTO categories (name_ar, description, icon, sort_order) VALUES (?, ?, ?, ?)",
+        'استشارات حقوقية', 'استشارات قانونية وحقوقية', 'bi-bank', 6);
+      const r = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
+      catId = r[0].values[0][0];
+    } else {
+      catId = catResult[0].values[0][0];
+    }
+    const existingServices = db.exec("SELECT COUNT(*) as c FROM services WHERE category_id = " + catId);
+    if (existingServices[0].values[0][0] == 0) {
+      const svcs = ['استشارة قانونية', 'حضور جلسة', 'صياغة عقد',
+        'مذكرة أو تحرير عقد', 'لائحة اعتراضية', 'توكيل محامي',
+        'مراجعة دوائر حكومية', 'التوثيق'];
+      svcs.forEach((name, i) => {
+        db.runStmt("INSERT INTO services (category_id, name_ar, description, icon, sort_order) VALUES (?, ?, ?, ?, ?)",
+          catId, name, name, 'bi-file-text', i);
+      });
+    }
+  } catch(e) { console.error('Error creating legal services:', e); }
 
   console.log('✅ Database initialized successfully');
   return db;
