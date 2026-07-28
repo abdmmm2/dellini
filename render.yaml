@@ -24,8 +24,7 @@ services:
         value: /data/dellini.db
       - key: UPLOADS_DIR
         value: /data
-      - key: SEED
-        value: "true"
+      # SEED=true removed — first deploy only
     disks:
       - name: dellini-data
         mountPath: /data
