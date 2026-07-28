@@ -1,0 +1,20 @@
+{
+  "name": "دلني - منصة استشارات",
+  "short_name": "دلني",
+  "description": "منصة دلني للاستشارات الإلكترونية",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a2332",
+  "theme_color": "#1a2332",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    { "src": "/images/pwa-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/images/pwa-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/images/pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["business", "communication"],
+  "prefer_related_applications": false,
+  "scope": "/"
+}
