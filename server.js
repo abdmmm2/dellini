@@ -69,6 +69,34 @@ app.use(session({
   }
 }));
 
+// 🔒 CSRF Protection
+const crypto = require('crypto');
+app.use((req, res, next) => {
+  // Generate token if not exists
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+  }
+  // Make token available in templates
+  res.locals.csrfToken = req.session.csrfToken;
+  
+  // Skip CSRF check for GET, HEAD, OPTIONS
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  
+  // Check CSRF token for POST/PUT/DELETE
+  const token = req.body?._csrf || req.headers['x-csrf-token'];
+  if (token && token === req.session.csrfToken) {
+    next();
+  } else {
+    console.warn('🚫 CSRF blocked:', req.method, req.path);
+    if (req.accepts('html')) {
+      req.session.error_msg = 'انتهت صلاحية الجلسة، حاول مرة أخرى';
+      res.redirect('back');
+    } else {
+      res.status(403).json({ error: 'Invalid CSRF token' });
+    }
+  }
+});
+
 // Global template variables
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;

@@ -158,5 +158,33 @@
   <script src="https://js.stripe.com/v3/"></script>
   <script src="/js/main.js"></script>
   <script src="/js/notifications.js"></script>
+  <!-- 🔒 CSRF: auto-inject token into every form -->
+  <script>
+    (function() {
+      const token = '<%= csrfToken %>';
+      if (!token) return;
+      // Add token to all forms
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('form').forEach(function(form) {
+          if (!form.querySelector('input[name="_csrf"]')) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = '_csrf';
+            input.value = token;
+            form.appendChild(input);
+          }
+        });
+        // Add token to all fetch POST requests
+        var origFetch = window.fetch;
+        window.fetch = function(url, opts) {
+          if (opts && opts.method === 'POST') {
+            opts.headers = opts.headers || {};
+            opts.headers['X-CSRF-Token'] = token;
+          }
+          return origFetch(url, opts);
+        };
+      });
+    })();
+  </script>
 </body>
 </html>
