@@ -391,6 +391,20 @@ async function initializeDatabase() {
     )
   `);
 
+  // Email verification codes
+  db._rawRun(`
+    CREATE TABLE IF NOT EXISTS email_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      email TEXT NOT NULL,
+      code TEXT NOT NULL,
+      expires_at DATETIME NOT NULL,
+      verified INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   // Identity verifications table (National ID OCR data)
   db._rawRun(`
     CREATE TABLE IF NOT EXISTS identity_verifications (

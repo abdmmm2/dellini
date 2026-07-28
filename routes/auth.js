@@ -40,6 +40,14 @@ router.get('/register', (req, res) => {
 router.post('/register', uploadId.single('national_id'), async (req, res) => {
   const { name, email, phone, password, confirm_password, role, id_photo_data } = req.body;
   const userRole = (role === 'consultant') ? 'consultant' : 'client';
+  
+  // Format phone with 966 prefix
+  let formattedPhone = phone || '';
+  formattedPhone = formattedPhone.replace(/[^0-9]/g, '');
+  if (formattedPhone.startsWith('966')) formattedPhone = formattedPhone;
+  else if (formattedPhone.startsWith('05')) formattedPhone = '966' + formattedPhone.slice(1);
+  else if (formattedPhone.startsWith('5')) formattedPhone = '966' + formattedPhone;
+  else if (formattedPhone) formattedPhone = '966' + formattedPhone;
 
   if (!name || !email || !password) {
     req.session.error_msg = 'جميع الحقول المطلوبة يجب أن تمتلئ';
@@ -129,12 +137,16 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
           `, userId, imagePath);
         }
       }
-    }
-
-    req.session.success_msg = 'تم إنشاء الحساب بنجاح، يمكنك تسجيل الدخول الآن';
-    // Send welcome email (async, don't await)
-    sendWelcomeEmail(email, name).catch(() => {});
-    res.redirect('/login');
+    // 📧 Send verification code
+    const { sendVerificationCode, generateCode } = require('../utils/email');
+    const verifCode = generateCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+    db.runStmt('INSERT INTO email_verifications (user_id, email, code, expires_at) VALUES (?, ?, ?, ?)',
+      userId, email, verifCode, expiresAt);
+    sendVerificationCode(email, name, verifCode).catch(() => {});
+    
+    req.session.success_msg = 'تم إنشاء الحساب! تحقق من بريدك الإلكتروني للتفعيل';
+    res.redirect('/verify?email=' + encodeURIComponent(email));
   } catch (err) {
     console.error(err);
     req.session.error_msg = 'حدث خطأ أثناء إنشاء الحساب';
@@ -146,6 +158,54 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
 router.get('/login', (req, res) => {
   if (req.session.user) return res.redirect('/');
   res.render('auth/login', { title: 'تسجيل الدخول' });
+});
+
+// ✅ Email verification page
+router.get('/verify', (req, res) => {
+  const email = req.query.email || '';
+  if (!email) return res.redirect('/login');
+  res.render('auth/verify', { title: 'تأكيد البريد', email });
+});
+
+router.post('/verify', (req, res) => {
+  const db = getDB();
+  const { email, code } = req.body;
+  if (!email || !code) {
+    req.session.error_msg = 'يرجى إدخال رمز التفعيل';
+    return res.redirect('/verify?email=' + encodeURIComponent(email));
+  }
+  
+  const verification = db.get('SELECT * FROM email_verifications WHERE email = ? AND code = ? AND verified = 0 AND expires_at > datetime("now") ORDER BY created_at DESC LIMIT 1', email, code);
+  if (!verification) {
+    req.session.error_msg = 'رمز التفعيل غير صحيح أو منتهي الصلاحية';
+    return res.redirect('/verify?email=' + encodeURIComponent(email));
+  }
+  
+  db.runStmt('UPDATE email_verifications SET verified = 1 WHERE id = ?', verification.id);
+  db.runStmt('UPDATE users SET is_active = 1 WHERE email = ?', email);
+  
+  req.session.success_msg = '✅ تم تفعيل البريد الإلكتروني بنجاح! يمكنك تسجيل الدخول الآن';
+  res.redirect('/login');
+});
+
+// 🔄 Resend verification code
+router.get('/resend-code', (req, res) => {
+  const db = getDB();
+  const email = req.query.email || '';
+  if (!email) return res.redirect('/login');
+  
+  const user = db.get('SELECT id, name, email FROM users WHERE email = ?', email);
+  if (!user) return res.redirect('/register');
+  
+  const { sendVerificationCode, generateCode } = require('../utils/email');
+  const code = generateCode();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+  db.runStmt('INSERT INTO email_verifications (user_id, email, code, expires_at) VALUES (?, ?, ?, ?)',
+    user.id, email, code, expiresAt);
+  sendVerificationCode(email, user.name, code).catch(() => {});
+  
+  req.session.success_msg = 'تم إعادة إرسال رمز التفعيل';
+  res.redirect('/verify?email=' + encodeURIComponent(email));
 });
 
 // Login handler
@@ -166,6 +226,12 @@ router.post('/login', (req, res) => {
   }
 
   if (!user.is_active) {
+    // Check if unverified email
+    const pendingVerif = db.get('SELECT id FROM email_verifications WHERE email = ? AND verified = 0 ORDER BY created_at DESC LIMIT 1', email);
+    if (pendingVerif) {
+      req.session.error_msg = 'بريدك الإلكتروني غير مفعّل. يرجى التحقق من بريدك الإلكتروني';
+      return res.redirect('/verify?email=' + encodeURIComponent(email));
+    }
     req.session.error_msg = 'حسابك معطل، يرجى التواصل مع الإدارة';
     return res.redirect('/login');
   }
