@@ -21,6 +21,8 @@
     "nodemailer": "^6.9.3",
     "pdfkit": "^0.19.1",
     "sharp": "^0.35.3",
+    "simple-peer": "^9.11.1",
+    "socket.io": "^4.8.3",
     "sql.js": "^1.14.1",
     "stripe": "^14.25.0",
     "tesseract.js": "^7.0.0",

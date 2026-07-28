@@ -1,14 +1,18 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const session = require('express-session');
 const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { Server } = require('socket.io');
 const { initializeDatabase, seedDatabase } = require('./database');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
 const PORT = process.env.PORT || 3000;
 
 // Trust proxy (Render, Railway, Fly.io)
@@ -139,6 +143,46 @@ app.use((req, res) => {
   res.status(404).render('404', { title: 'الصفحة غير موجودة' });
 });
 
+// 🎧 WebRTC Signaling for voice calls
+const rooms = {};
+io.on('connection', (socket) => {
+  console.log('🔊 WebSocket connected:', socket.id);
+  
+  socket.on('join-room', (roomId) => {
+    socket.join(roomId);
+    rooms[roomId] = rooms[roomId] || [];
+    rooms[roomId].push(socket.id);
+    console.log(`📞 ${socket.id} joined room ${roomId}`);
+    
+    // Notify others
+    socket.to(roomId).emit('user-joined', socket.id);
+  });
+  
+  socket.on('leave-room', (roomId) => {
+    socket.leave(roomId);
+    if (rooms[roomId]) {
+      rooms[roomId] = rooms[roomId].filter(id => id !== socket.id);
+      if (rooms[roomId].length === 0) delete rooms[roomId];
+    }
+    socket.to(roomId).emit('user-left', socket.id);
+  });
+  
+  // WebRTC signaling
+  socket.on('signal', (data) => {
+    const { roomId, signal } = data;
+    socket.to(roomId).emit('signal', { signal, from: socket.id });
+  });
+  
+  socket.on('disconnect', () => {
+    for (const roomId in rooms) {
+      rooms[roomId] = rooms[roomId].filter(id => id !== socket.id);
+      socket.to(roomId).emit('user-left', socket.id);
+      if (rooms[roomId].length === 0) delete rooms[roomId];
+    }
+    console.log('🔇 Disconnected:', socket.id);
+  });
+});
+
 // Wait for DB init then start
 async function startServer() {
   try {
@@ -156,7 +200,7 @@ async function startServer() {
         await seedDatabase();
       }
     }
-    app.listen(PORT, '0.0.0.0', () => {
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 دلني running on http://0.0.0.0:${PORT}`);
     });
 
@@ -195,7 +239,7 @@ async function startServer() {
   } catch (err) {
     console.error('Failed to start:', err);
     // Don't exit on Railway — let health check fail and restart
-    app.listen(PORT, '0.0.0.0', () => {
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`⚠️ دلني running in degraded mode on http://0.0.0.0:${PORT}`);
     });
   }
