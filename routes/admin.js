@@ -1287,4 +1287,93 @@ router.post('/services/assign', requireAdmin, (req, res) => {
   res.redirect('/admin/services');
 });
 
+// =====================================================================
+// 💾 النسخ الاحتياطي لقاعدة البيانات
+// =====================================================================
+
+const BACKUP_DIR = process.env.BACKUP_DIR || process.env.UPLOADS_DIR || path.join(__dirname, '..', 'public');
+const backupsPath = path.join(BACKUP_DIR, 'backups');
+if (!fs.existsSync(backupsPath)) {
+  try { fs.mkdirSync(backupsPath, { recursive: true }); } catch(e) {}
+}
+
+// صفحة إدارة النسخ الاحتياطي
+router.get('/backup', requireAdmin, (req, res) => {
+  const db = getDB();
+  
+  // Get backup files
+  let backups = [];
+  try {
+    backups = fs.readdirSync(backupsPath)
+      .filter(f => f.endsWith('.db') || f.endsWith('.zip'))
+      .map(f => {
+        const stat = fs.statSync(path.join(backupsPath, f));
+        return { name: f, size: stat.size, time: stat.mtime };
+      })
+      .sort((a, b) => b.time - a.time);
+  } catch(e) {}
+  
+  // Stats
+  const stats = {
+    users: db.get('SELECT COUNT(*) as c FROM users').c,
+    consultants: db.get('SELECT COUNT(*) as c FROM consultants').c,
+    consultations: db.get('SELECT COUNT(*) as c FROM consultations').c,
+    categories: db.get('SELECT COUNT(*) as c FROM categories').c,
+    services: db.get('SELECT COUNT(*) as c FROM services').c,
+  };
+  
+  res.render('admin/backup', { title: 'النسخ الاحتياطي', backups, stats });
+});
+
+// إنشاء نسخة احتياطية
+router.post('/backup/create', requireAdmin, (req, res) => {
+  try {
+    const { getDB, saveDB } = require('../database');
+    const db = getDB();
+    
+    // Force save to disk first
+    saveDB();
+    
+    // Get current DB file
+    const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'dellini.db');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const backupName = `dellini-backup-${timestamp}.db`;
+    const backupPath = path.join(backupsPath, backupName);
+    
+    // Copy the DB file
+    if (fs.existsSync(DB_PATH)) {
+      fs.copyFileSync(DB_PATH, backupPath);
+      req.session.success_msg = `✅ تم إنشاء النسخة الاحتياطية: ${backupName}`;
+    } else {
+      req.session.error_msg = '❌ قاعدة البيانات غير موجودة';
+    }
+  } catch(err) {
+    console.error('Backup error:', err);
+    req.session.error_msg = '❌ فشل إنشاء النسخة الاحتياطية';
+  }
+  res.redirect('/admin/backup');
+});
+
+// تحميل نسخة احتياطية
+router.get('/backup/download/:name', requireAdmin, (req, res) => {
+  const filePath = path.join(backupsPath, req.params.name);
+  if (fs.existsSync(filePath)) {
+    res.download(filePath);
+  } else {
+    req.session.error_msg = '❌ الملف غير موجود';
+    res.redirect('/admin/backup');
+  }
+});
+
+// حذف نسخة احتياطية
+router.post('/backup/delete', requireAdmin, (req, res) => {
+  const { name } = req.body;
+  const filePath = path.join(backupsPath, name);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+    req.session.success_msg = '✅ تم حذف النسخة الاحتياطية';
+  }
+  res.redirect('/admin/backup');
+});
+
 module.exports = router;

@@ -98,6 +98,39 @@ async function startServer() {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 دلني running on http://0.0.0.0:${PORT}`);
     });
+
+    // Auto-backup once a day
+    const BACKUP_DIR = process.env.BACKUP_DIR || process.env.UPLOADS_DIR || path.join(__dirname, 'public');
+    const backupsPath = path.join(BACKUP_DIR, 'backups');
+    try {
+      if (!fs.existsSync(backupsPath)) fs.mkdirSync(backupsPath, { recursive: true });
+    } catch(e) {}
+    
+    const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'dellini.db');
+    
+    async function autoBackup() {
+      try {
+        if (!fs.existsSync(DB_PATH)) return;
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const backupName = `dellini-auto-backup-${timestamp}.db`;
+        fs.copyFileSync(DB_PATH, path.join(backupsPath, backupName));
+        console.log(`💾 Auto-backup: ${backupName}`);
+        
+        // Keep only last 7 backups
+        const files = fs.readdirSync(backupsPath)
+          .filter(f => f.startsWith('dellini-auto-backup'))
+          .sort()
+          .reverse();
+        files.slice(7).forEach(f => {
+          try { fs.unlinkSync(path.join(backupsPath, f)); } catch(e) {}
+        });
+      } catch(e) {}
+    }
+    
+    // First backup after 1 minute
+    setTimeout(autoBackup, 60000);
+    // Then every 24 hours
+    setInterval(autoBackup, 24 * 60 * 60 * 1000);
   } catch (err) {
     console.error('Failed to start:', err);
     // Don't exit on Railway — let health check fail and restart
