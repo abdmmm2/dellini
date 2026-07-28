@@ -82,6 +82,15 @@ app.use((req, res, next) => {
   // Skip CSRF check for GET, HEAD, OPTIONS
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   
+  // Skip CSRF for multipart upload routes (body isn't parsed yet at this stage)
+  const uploadRoutes = ['/register', '/client/settings/upload-id', '/admin/backup/upload-restore'];
+  if (uploadRoutes.includes(req.path)) return next();
+  
+  // Also check if content-type is multipart — skip CSRF (will be handled by multer)
+  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+    return next();
+  }
+  
   // Check CSRF token for POST/PUT/DELETE
   const token = req.body?._csrf || req.headers['x-csrf-token'];
   if (token && token === req.session.csrfToken) {
