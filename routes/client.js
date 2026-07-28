@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { getDB } = require('../database');
 const { requireLogin, requireRole } = require('../middleware/auth');
 const { sendNewConsultationNotification } = require('../utils/email');
@@ -20,6 +21,29 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = ['.jpg','.jpeg','.png','.gif','.webp','.bmp','.pdf','.doc','.docx'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error('فقط الصور والمستندات مسموحة'));
+  }
+});
+
+// 🆔 ID image upload config for settings
+const idStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '..', 'public', 'uploads', 'ids');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + ext);
+  }
+});
+const uploadId = multer({
+  storage: idStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg','.jpeg','.png','.gif','.webp','.bmp','.pdf'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowed.includes(ext)) cb(null, true);
     else cb(new Error('فقط الصور والمستندات مسموحة'));
