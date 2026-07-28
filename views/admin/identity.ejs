@@ -25,6 +25,9 @@
                 %> mt-1">
                   <%= v.status === 'verified' ? '✅ موثق' : v.status === 'rejected' ? '❌ مرفوض' : '⏳ قيد المراجعة' %>
                 </span>
+                <a href="/admin/identity/pdf/<%= v.id %>" class="btn btn-sm btn-outline-danger ms-2" title="تصدير PDF">
+                  <i class="bi bi-filetype-pdf"></i>
+                </a>
               </div>
               <small class="text-muted"><%= v.created_at %></small>
             </div>

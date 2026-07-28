@@ -1471,4 +1471,79 @@ router.post('/identity/action', requireAdmin, (req, res) => {
   res.redirect('/admin/identity');
 });
 
+// 🖨️ تصدير بيانات الهوية كـ PDF
+router.get('/identity/pdf/:id', requireAdmin, (req, res) => {
+  const db = getDB();
+  const v = db.get(`
+    SELECT iv.*, u.name as user_name, u.email, u.phone
+    FROM identity_verifications iv
+    JOIN users u ON u.id = iv.user_id
+    WHERE iv.id = ?
+  `, req.params.id);
+  
+  if (!v) {
+    req.session.error_msg = '❌ الملف غير موجود';
+    return res.redirect('/admin/identity');
+  }
+  
+  try {
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ size: 'A4', layout: 'portrait' });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=identity-${v.id_number || v.id}.pdf`);
+    
+    doc.pipe(res);
+    
+    // Header
+    doc.fontSize(22).font('Helvetica-Bold').text('دلني', { align: 'center' });
+    doc.fontSize(14).font('Helvetica').text('التحقق من الهوية', { align: 'center' });
+    doc.moveDown();
+    
+    // Line
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown();
+    
+    // User info
+    doc.fontSize(12).font('Helvetica-Bold').text('معلومات المستخدم');
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`الاسم: ${v.user_name || '—'}`);
+    doc.text(`البريد: ${v.email || '—'}`);
+    doc.text(`الجوال: ${v.phone || '—'}`);
+    doc.text(`الحالة: ${v.status === 'verified' ? 'موثق' : v.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}`);
+    doc.moveDown();
+    
+    // ID Data
+    doc.fontSize(12).font('Helvetica-Bold').text('بيانات الهوية');
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`الاسم على الهوية: ${v.full_name || '—'}`);
+    doc.text(`رقم الهوية: ${v.id_number || '—'}`);
+    doc.text(`المصدر: ${v.issuer || '—'}`);
+    doc.text(`تاريخ الإصدار: ${v.issue_date || '—'}`);
+    doc.text(`تاريخ الانتهاء: ${v.expiry_date || '—'}`);
+    doc.text(`تاريخ الميلاد: ${v.birth_date || '—'}`);
+    doc.text(`العمر: ${v.age || '—'}`);
+    doc.moveDown();
+    
+    // OCR text
+    if (v.ocr_raw_text) {
+      doc.fontSize(10).font('Helvetica-Bold').text('النص المستخرج (OCR):');
+      doc.fontSize(7).font('Helvetica');
+      doc.text(v.ocr_raw_text.slice(0, 800));
+    }
+    
+    // Footer
+    doc.moveDown(2);
+    doc.fontSize(8).fillColor('#888');
+    doc.text(`تاريخ التقرير: ${new Date().toLocaleString('ar-SA')}`, { align: 'center' });
+    doc.text(`دلني - منصة استشارات إلكترونية`, { align: 'center' });
+    
+    doc.end();
+  } catch(err) {
+    console.error('PDF error:', err);
+    req.session.error_msg = '❌ فشل إنشاء PDF';
+    res.redirect('/admin/identity');
+  }
+});
+
 module.exports = router;
