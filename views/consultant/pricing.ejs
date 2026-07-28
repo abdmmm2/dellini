@@ -50,13 +50,14 @@
                   </form>
                 </td>
                 <td>
-                  <form action="/consultant/pricing" method="POST" class="d-flex gap-1 align-items-center flex-wrap">
+                  <form action="/consultant/pricing" method="POST" class="d-flex gap-1 align-items-center flex-wrap" id="voiceForm_<%= cat.id %>">
                     <input type="hidden" name="category_id" value="<%= cat.id %>">
                     <input type="hidden" name="type" value="voice">
+                    <input type="hidden" name="action" value="voice_toggle">
                     <div class="form-check form-switch mb-0">
                       <input class="form-check-input" type="checkbox" name="voice_enabled" value="1" id="voice_<%= cat.id %>"
                         <%= cat.voice_enabled ? 'checked' : '' %>
-                        onchange="document.getElementById('voicePrice_<%= cat.id %>').style.display = this.checked ? 'flex' : 'none';">
+                        onchange="document.getElementById('voicePrice_<%= cat.id %>').style.display = this.checked ? 'flex' : 'none'; this.closest('form').querySelector('[name=action]').value='voice_toggle'; this.closest('form').submit();">
                       <label class="form-check-label small" for="voice_<%= cat.id %>"><%= cat.voice_enabled ? '✅' : '❌' %></label>
                     </div>
                     <div class="d-flex gap-1 align-items-center" id="voicePrice_<%= cat.id %>" style="display:<%= cat.voice_enabled ? 'flex' : 'none' %>">
@@ -64,7 +65,7 @@
                         value="<%= cat.voice_price_per_minute || 5 %>" min="1" step="1">
                       <span class="small text-muted">ر.س/د</span>
                       <button type="submit" name="action" value="voice_price" class="btn btn-sm btn-outline-success">
-                        <i class="bi bi-check-lg"></i> حفظ
+                        <i class="bi bi-check-lg"></i> حفظ السعر
                       </button>
                     </div>
                   </form>
