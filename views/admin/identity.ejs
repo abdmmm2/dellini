@@ -11,10 +11,11 @@
   <div class="row g-3">
     <% verifications.forEach(v => { %>
       <div class="col-12">
-        <div class="card shadow-sm" style="border-radius:14px;border:1px solid <%=
+        <div class="card shadow-sm" style="border-radius:14px;border:2px solid <%=
           v.status === 'verified' ? '#198754' : v.status === 'rejected' ? '#dc3545' : '#ffc107'
         %>">
           <div class="card-body">
+            <!-- Header -->
             <div class="d-flex justify-content-between align-items-start">
               <div>
                 <h6 class="fw-bold mb-1"><%= v.user_name || 'غير معروف' %></h6>
@@ -25,7 +26,7 @@
                 %> mt-1">
                   <%= v.status === 'verified' ? '✅ موثق' : v.status === 'rejected' ? '❌ مرفوض' : '⏳ قيد المراجعة' %>
                 </span>
-                <a href="/admin/identity/pdf/<%= v.id %>" class="btn btn-sm btn-outline-danger ms-2" title="تصدير PDF">
+                <a href="/admin/identity/pdf/<%= v.id %>" class="btn btn-sm btn-outline-danger ms-1" title="تصدير PDF">
                   <i class="bi bi-filetype-pdf"></i>
                 </a>
               </div>
@@ -33,30 +34,68 @@
             </div>
 
             <div class="row g-2 mt-2">
-              <% if (v.image_path) { %>
-                <div class="col-md-4">
-                  <img src="<%= v.image_path %>" class="img-fluid rounded" style="max-height:200px" alt="الهوية">
-                </div>
-              <% } %>
-              <div class="col-md">
-                <table class="table table-sm small mb-0">
-                  <tr><th>الاسم</th><td><%= v.full_name || '—' %></td></tr>
-                  <tr><th>رقم الهوية</th><td><%= v.id_number || '—' %></td></tr>
-                  <tr><th>تاريخ الإصدار</th><td><%= v.issue_date || '—' %></td></tr>
-                  <tr><th>تاريخ الانتهاء</th><td><%= v.expiry_date || '—' %></td></tr>
-                  <tr><th>تاريخ الميلاد</th><td><%= v.birth_date || '—' %></td></tr>
-                  <tr><th>العمر</th><td><%= v.age || '—' %></td></tr>
-                </table>
+              <!-- ID Image -->
+              <div class="col-md-4">
+                <% if (v.image_path) { %>
+                  <img src="<%= v.image_path %>" class="img-fluid rounded" style="max-height:200px;width:100%;object-fit:contain;background:#f8f9fa" alt="الهوية">
+                <% } else { %>
+                  <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height:150px">
+                    <span class="text-muted">لا توجد صورة</span>
+                  </div>
+                <% } %>
+              </div>
+
+              <!-- Manual Edit Form -->
+              <div class="col-md-8">
+                <form method="POST" action="/admin/identity/update/<%= v.id %>">
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <label class="small fw-bold">الاسم</label>
+                      <input type="text" name="full_name" class="form-control form-control-sm" value="<%= v.full_name || '' %>" placeholder="—">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="small fw-bold">رقم الهوية</label>
+                      <input type="text" name="id_number" class="form-control form-control-sm" value="<%= v.id_number || '' %>" placeholder="—">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="small fw-bold">المصدر</label>
+                      <input type="text" name="issuer" class="form-control form-control-sm" value="<%= v.issuer || '' %>" placeholder="—">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="small fw-bold">تاريخ الإصدار</label>
+                      <input type="text" name="issue_date" class="form-control form-control-sm" value="<%= v.issue_date || '' %>" placeholder="مثال: 1440/01/01">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="small fw-bold">تاريخ الانتهاء</label>
+                      <input type="text" name="expiry_date" class="form-control form-control-sm" value="<%= v.expiry_date || '' %>" placeholder="مثال: 1448/01/01">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="small fw-bold">تاريخ الميلاد</label>
+                      <input type="text" name="birth_date" class="form-control form-control-sm" value="<%= v.birth_date || '' %>" placeholder="مثال: 1410/01/01">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="small fw-bold">العمر</label>
+                      <input type="text" name="age" class="form-control form-control-sm" value="<%= v.age || '' %>" placeholder="—">
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                      <button type="submit" class="btn btn-warning btn-sm w-100">
+                        <i class="bi bi-pencil"></i> حفظ البيانات
+                      </button>
+                    </div>
+                  </div>
+                </form>
               </div>
             </div>
 
+            <!-- OCR Raw Text -->
             <% if (v.ocr_raw_text) { %>
               <details class="mt-2">
                 <summary class="small text-muted">📝 النص المستخرج (OCR)</summary>
-                <pre class="small bg-light p-2 mt-1 rounded" style="max-height:100px;overflow:auto;white-space:pre-wrap;font-size:0.7rem;"><%= v.ocr_raw_text %></pre>
+                <pre class="small bg-light p-2 mt-1 rounded" style="max-height:100px;overflow:auto;white-space:pre-wrap;font-size:0.7rem;direction:ltr;text-align:left"><%= v.ocr_raw_text %></pre>
               </details>
             <% } %>
 
+            <!-- Approve/Reject -->
             <% if (v.status === 'pending') { %>
               <div class="d-flex gap-2 mt-2">
                 <form method="POST" action="/admin/identity/action" style="display:inline">

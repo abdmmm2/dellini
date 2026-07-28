@@ -1511,6 +1511,16 @@ router.post('/identity/action', requireAdmin, (req, res) => {
   res.redirect('/admin/identity');
 });
 
+// ✏️ تحديث بيانات الهوية يدويًا (للإدارة)
+router.post('/identity/update/:id', requireAdmin, (req, res) => {
+  const db = getDB();
+  const { full_name, id_number, issuer, issue_date, expiry_date, birth_date, age } = req.body;
+  db.runStmt(`UPDATE identity_verifications SET full_name=?, id_number=?, issuer=?, issue_date=?, expiry_date=?, birth_date=?, age=?, status='pending', updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+    full_name || null, id_number || null, issuer || null, issue_date || null, expiry_date || null, birth_date || null, age || null, req.params.id);
+  req.session.success_msg = '✅ تم تحديث بيانات الهوية';
+  res.redirect('/admin/identity');
+});
+
 // 🖨️ تصدير بيانات الهوية كـ PDF
 router.get('/identity/pdf/:id', requireAdmin, (req, res) => {
   const db = getDB();
