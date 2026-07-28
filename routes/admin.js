@@ -1376,4 +1376,62 @@ router.post('/backup/delete', requireAdmin, (req, res) => {
   res.redirect('/admin/backup');
 });
 
+// استعادة نسخة احتياطية
+router.post('/backup/restore', requireAdmin, (req, res) => {
+  const { name } = req.body;
+  const backupFile = path.join(backupsPath, name);
+  const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'dellini.db');
+  
+  if (!fs.existsSync(backupFile)) {
+    req.session.error_msg = '❌ الملف غير موجود';
+    return res.redirect('/admin/backup');
+  }
+  
+  try {
+    // Copy backup to current DB
+    fs.copyFileSync(backupFile, DB_PATH);
+    req.session.success_msg = `✅ تم استعادة النسخة: ${name}. أعد تشغيل السيرفر (Manual Deploy) عشان التغييرات تطبق.`;
+  } catch(err) {
+    console.error('Restore error:', err);
+    req.session.error_msg = '❌ فشل استعادة النسخة';
+  }
+  res.redirect('/admin/backup');
+});
+
+// رفع ملف قاعدة بيانات واستعادته
+const multer = require('multer');
+const upload = multer({ 
+  dest: path.join(__dirname, '..', 'uploads'),
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+  fileFilter: (req, file, cb) => {
+    if (file.originalname.endsWith('.db') || file.mimetype === 'application/octet-stream' || file.mimetype === 'application/x-sqlite3') {
+      cb(null, true);
+    } else {
+      cb(new Error('فقط ملفات .db مسموحة'));
+    }
+  }
+});
+
+router.post('/backup/upload-restore', requireAdmin, upload.single('dbfile'), (req, res) => {
+  if (!req.file) {
+    req.session.error_msg = '❌ يرجى اختيار ملف';
+    return res.redirect('/admin/backup');
+  }
+  
+  try {
+    const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'dellini.db');
+    // Move uploaded file to DB path
+    fs.copyFileSync(req.file.path, DB_PATH);
+    // Clean up temp file
+    fs.unlinkSync(req.file.path);
+    req.session.success_msg = '✅ تم رفع الملف واستبدال قاعدة البيانات. أعد تشغيل السيرفر (Manual Deploy) عشان التغييرات تطبق.';
+  } catch(err) {
+    console.error('Upload restore error:', err);
+    req.session.error_msg = '❌ فشل استعادة الملف';
+    // Clean up temp file
+    try { fs.unlinkSync(req.file.path); } catch(e) {}
+  }
+  res.redirect('/admin/backup');
+});
+
 module.exports = router;

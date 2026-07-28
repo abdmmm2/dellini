@@ -24,8 +24,8 @@
     </div>
     <div class="col-4">
       <div class="card text-center p-2 border-0 shadow-sm" style="border-radius:12px">
-        <div class="fw-bold text-warning fs-5"><%= stats.categories %></div>
-        <small class="text-muted">قسم</small>
+        <div class="fw-bold text-warning fs-5"><%= stats.consultants %></div>
+        <small class="text-muted">مستشار</small>
       </div>
     </div>
   </div>
@@ -44,12 +44,18 @@
             <small class="text-muted"><%= b.time.toLocaleString('ar-SA') %></small>
           </div>
           <div class="d-flex gap-1">
-            <a href="/admin/backup/download/<%= b.name %>" class="btn btn-sm btn-outline-primary">
+            <a href="/admin/backup/download/<%= b.name %>" class="btn btn-sm btn-outline-primary" title="تحميل">
               <i class="bi bi-download"></i>
             </a>
+            <form method="POST" action="/admin/backup/restore" style="display:inline" onsubmit="return confirm('استعادة هذه النسخة؟ سيتم استبدال قاعدة البيانات الحالية.')">
+              <input type="hidden" name="name" value="<%= b.name %>">
+              <button type="submit" class="btn btn-sm btn-outline-warning" title="استعادة">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            </form>
             <form method="POST" action="/admin/backup/delete" style="display:inline" onsubmit="return confirm('حذف النسخة؟')">
               <input type="hidden" name="name" value="<%= b.name %>">
-              <button type="submit" class="btn btn-sm btn-outline-danger">
+              <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف">
                 <i class="bi bi-trash"></i>
               </button>
             </form>
@@ -65,12 +71,28 @@
     </div>
   <% } %>
 
+  <!-- Upload & Restore from file -->
+  <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
+    <div class="card-body">
+      <h6 class="fw-bold"><i class="bi bi-upload"></i> استعادة من ملف</h6>
+      <p class="small text-muted">ارفع ملف قاعدة بيانات (.db) لاستبدال قاعدة البيانات الحالية.</p>
+      <form method="POST" action="/admin/backup/upload-restore" enctype="multipart/form-data" onsubmit="return confirm('استبدال قاعدة البيانات الحالية بالملف المرفوع؟')">
+        <div class="mb-2">
+          <input type="file" name="dbfile" accept=".db" class="form-control form-control-sm" required>
+        </div>
+        <button type="submit" class="btn btn-warning btn-sm">
+          <i class="bi bi-upload"></i> رفع واستعادة
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Auto-backup info -->
   <div class="alert alert-info py-2 mb-0" style="border-radius:12px">
     <i class="bi bi-info-circle"></i>
     <small>
-      النسخ تخزّن على القرص الدائم (<%= process.env.BACKUP_DIR || '/' %>) وما تروح مع إعادة النشر.
-      خذ نسخة كل فترة وحملها على جهازك 👌
+      <strong>ملاحظة:</strong> بعد الاستعادة، أعد تشغيل السيرفر (Manual Deploy) عشان التغييرات تطبق.<br>
+      النسخ تخزّن على القرص الدائم (<%= process.env.DB_PATH || '/data/dellini.db' %>) وما تروح مع إعادة النشر 💾
     </small>
   </div>
 </div>
