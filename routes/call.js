@@ -49,7 +49,7 @@ router.get('/:consultationId', requireLogin, (req, res) => {
   }
 
   // Generate a unique room name for Jitsi
-  const roomName = `dellini_${consultation.id}_${consultation.created_at}`;
+  const roomName = `dellini_${consultation.id}_${Date.now()}`;
   const displayName = isClient ? (req.session.user.name || 'عميل') : (req.session.user.name || 'مستشار');
 
   // Get voice settings
