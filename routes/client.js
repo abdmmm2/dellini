@@ -6,12 +6,25 @@ const { getDB } = require('../database');
 const { requireLogin, requireRole } = require('../middleware/auth');
 const { sendNewConsultationNotification } = require('../utils/email');
 
-// File upload config
+// File upload config — 🔒 only images and PDFs allowed
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, '../public/uploads')),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const name = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + ext;
+    cb(null, name);
+  }
 });
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({ 
+  storage, 
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg','.jpeg','.png','.gif','.webp','.bmp','.pdf','.doc','.docx'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error('فقط الصور والمستندات مسموحة'));
+  }
+});
 
 // All routes require login + client role
 router.use(requireLogin);

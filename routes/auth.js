@@ -93,31 +93,36 @@ router.post('/login', (req, res) => {
   // Update online status
   db.runStmt('UPDATE users SET is_online = 1, last_active = CURRENT_TIMESTAMP WHERE id = ?', user.id);
 
-  req.session.user = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    role: user.role,
-    avatar: user.avatar
-  };
+  // 🔒 Regenerate session ID after login (prevents session fixation)
+  req.session.regenerate((err) => {
+    if (err) console.error('Session regeneration error:', err);
+    
+    req.session.user = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      avatar: user.avatar
+    };
 
-  // Load consultant_id if consultant
-  if (user.role === 'consultant') {
-    const consultant = db.get('SELECT id FROM consultants WHERE user_id = ?', user.id);
-    if (consultant) req.session.user.consultant_id = consultant.id;
-  }
+    // Load consultant_id if consultant
+    if (user.role === 'consultant') {
+      const consultant = db.get('SELECT id FROM consultants WHERE user_id = ?', user.id);
+      if (consultant) req.session.user.consultant_id = consultant.id;
+    }
 
-  req.session.success_msg = `مرحباً بك يا ${user.name}`;
+    req.session.success_msg = `مرحباً بك يا ${user.name}`;
 
-  // Redirect based on role
-  const redirectMap = {
-    admin: '/admin',
-    supervisor: '/admin',
-    consultant: '/consultant',
-    client: '/client'
-  };
-  res.redirect(redirectMap[user.role] || '/');
+    // Redirect based on role
+    const redirectMap = {
+      admin: '/admin',
+      supervisor: '/admin',
+      consultant: '/consultant',
+      client: '/client'
+    };
+    res.redirect(redirectMap[user.role] || '/');
+  });
 });
 
 // Logout

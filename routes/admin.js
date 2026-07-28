@@ -1366,8 +1366,9 @@ router.post('/backup/create', requireAdmin, (req, res) => {
 
 // تحميل نسخة احتياطية
 router.get('/backup/download/:name', requireAdmin, (req, res) => {
-  const filePath = path.join(backupsPath, req.params.name);
-  if (fs.existsSync(filePath)) {
+  const name = path.basename(req.params.name);
+  const filePath = path.join(backupsPath, name);
+  if (fs.existsSync(filePath) && filePath.startsWith(backupsPath)) {
     res.download(filePath);
   } else {
     req.session.error_msg = '❌ الملف غير موجود';
@@ -1377,9 +1378,9 @@ router.get('/backup/download/:name', requireAdmin, (req, res) => {
 
 // حذف نسخة احتياطية
 router.post('/backup/delete', requireAdmin, (req, res) => {
-  const { name } = req.body;
+  const name = path.basename(req.body.name || '');
   const filePath = path.join(backupsPath, name);
-  if (fs.existsSync(filePath)) {
+  if (fs.existsSync(filePath) && filePath.startsWith(backupsPath)) {
     fs.unlinkSync(filePath);
     req.session.success_msg = '✅ تم حذف النسخة الاحتياطية';
   }
@@ -1388,7 +1389,7 @@ router.post('/backup/delete', requireAdmin, (req, res) => {
 
 // استعادة نسخة احتياطية
 router.post('/backup/restore', requireAdmin, (req, res) => {
-  const { name } = req.body;
+  const name = path.basename(req.body.name || '');
   const backupFile = path.join(backupsPath, name);
   const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'dellini.db');
   

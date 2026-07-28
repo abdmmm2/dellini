@@ -4,6 +4,8 @@ const session = require('express-session');
 const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
 const fs = require('fs');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { initializeDatabase, seedDatabase } = require('./database');
 
 const app = express();
@@ -11,6 +13,22 @@ const PORT = process.env.PORT || 3000;
 
 // Trust proxy (Render, Railway, Fly.io)
 app.set('trust proxy', 1);
+
+// 🔒 Security Headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled to allow inline styles/scripts from Bootstrap
+  crossOriginEmbedderPolicy: false
+}));
+
+// 🔒 Rate Limiting: Login
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts
+  message: { error: 'محاولات كثيرة جداً، حاول بعد 15 دقيقة' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/login', loginLimiter);
 
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
@@ -38,12 +56,17 @@ if (process.env.UPLOADS_DIR) {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session (in-memory for dev, switch to DB store in production)
+// 🔒 Session (secure for production)
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'dellini-secret',
+  secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? require('crypto').randomBytes(32).toString('hex') : 'dellini-dev-secret'),
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 } // 7 days
+  cookie: { 
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  }
 }));
 
 // Global template variables
