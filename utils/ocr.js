@@ -1,31 +1,53 @@
 // OCR utility for Saudi National ID card
-// Uses OCR.space API (free, 25K requests/month, excellent Arabic support)
-const fs = require('fs');
+const Tesseract = require('tesseract.js');
 const path = require('path');
-const https = require('https');
-
-const OCR_API_KEY = process.env.OCR_API_KEY || 'helloworld'; // Free tier key
+const fs = require('fs');
+const sharp = require('sharp');
 
 /**
- * Extract text from an ID card image using OCR.space API
+ * Pre-process image for optimal OCR
+ */
+async function preprocessImage(inputPath, outputPath) {
+  try {
+    await sharp(inputPath)
+      .resize({ width: 1500, withoutEnlargement: false })
+      .grayscale()
+      .normalise()
+      .sharpen()
+      .jpeg({ quality: 95 })
+      .toFile(outputPath);
+    return outputPath;
+  } catch (e) {
+    console.error('Preprocess error:', e.message);
+    return inputPath;
+  }
+}
+
+/**
+ * Extract text from an ID card image using Tesseract.js
  */
 async function scanNationalId(imagePath) {
+  let worker = null;
   try {
     console.log('🔍 OCR: processing', imagePath);
     
-    // Read image as base64
-    const imageData = fs.readFileSync(imagePath);
-    const base64 = imageData.toString('base64');
+    // Preprocess
+    const procPath = imagePath.replace(/(\.\w+)$/, '-proc$1');
+    const imgPath = await preprocessImage(imagePath, procPath);
     
-    // Call OCR.space API
-    const result = await callOcrSpace(base64);
+    // Create worker with Arabic
+    console.log('🔍 Creating Tesseract worker...');
+    worker = await Tesseract.createWorker('ara', 1, {
+      logger: () => {}
+    });
     
-    if (!result || !result.ParsedResults || !result.ParsedResults.length) {
-      console.log('⚠️ OCR: No results');
-      return { rawText: '', fields: {} };
-    }
+    console.log('🔍 Recognizing...');
+    const { data } = await worker.recognize(imgPath);
     
-    const rawText = result.ParsedResults[0].ParsedText || '';
+    // Cleanup processed file
+    try { fs.unlinkSync(procPath); } catch(e) {}
+    
+    const rawText = data.text || '';
     console.log('📝 OCR text (first 500):', rawText.slice(0, 500));
     
     const fields = extractFields(rawText);
@@ -35,142 +57,64 @@ async function scanNationalId(imagePath) {
   } catch (err) {
     console.error('❌ OCR error:', err.message);
     return { rawText: '', fields: {} };
+  } finally {
+    if (worker) try { await worker.terminate(); } catch(e) {}
   }
 }
 
 /**
- * Call OCR.space API
- */
-function callOcrSpace(base64Image) {
-  return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({
-      base64Image: `data:image/jpeg;base64,${base64Image}`,
-      language: 'ara',  // Arabic
-      OCREngine: 2,      // More accurate engine
-      isTable: false,
-      detectOrientation: true,
-      scale: true,
-    });
-    
-    const options = {
-      hostname: 'api.ocr.space',
-      path: '/parse/image',
-      method: 'POST',
-      headers: {
-        'apikey': OCR_API_KEY,
-        'Content-Type': 'application/json',
-      },
-    };
-    
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.IsErroredOnProcessing) {
-            reject(new Error(parsed.ErrorMessage || 'OCR API error'));
-          } else {
-            resolve(parsed);
-          }
-        } catch(e) {
-          reject(e);
-        }
-      });
-    });
-    
-    req.on('error', reject);
-    req.write(postData);
-    req.end();
-  });
-}
-
-/**
- * Extract structured fields from OCR text - Saudi National ID card
+ * Extract fields from OCR text - Saudi National ID
  */
 function extractFields(text) {
   const fields = {};
+  const cleaned = text.replace(/[\s\n\r]+/g, ' ').replace(/[ـ\-_]+/g, '').trim();
   
-  // Normalize text
-  let cleaned = text.replace(/[\s\n\r]+/g, ' ').replace(/[ـ\-_]+/g, '').trim();
-  
-  // رقم الهوية (10 digits, starts with 1)
-  const idPatterns = [
-    /رقم\s*(?:الهوية|المدني|الوطني)\s*[:\-]?\s*(\d{10,})/i,
-    /(?:الهوية\s*الوطنية|الرقم\s*الوطني)\s*[:\-]?\s*(\d{10,})/i,
-  ];
-  for (const p of idPatterns) {
-    const m = cleaned.match(p);
-    if (m) { fields.id_number = m[1].slice(0, 10); break; }
-  }
-  if (!fields.id_number) {
-    const fb = cleaned.match(/\b(1\d{9})\b/);
-    if (fb) fields.id_number = fb[1];
-  }
+  // رقم الهوية
+  const idMatch = cleaned.match(/رقم\s*(?:الهوية|المدني|الوطني)\s*[:\-]?\s*(\d{10,})/i);
+  if (idMatch) fields.id_number = idMatch[1].slice(0,10);
   
   // الاسم
-  const namePatterns = [
-    /الاسم\s*[:\-]?\s*([^\d\r\n]{4,60}?)(?:\s{2,}|\s*\d|\s*رقم)/i,
-    /اسم\s*[:\-]?\s*([^\d\r\n]{4,60}?)(?:\s{2,}|\s*\d)/i,
-  ];
-  for (const p of namePatterns) {
-    const m = cleaned.match(p);
-    if (m) { const n = m[1].trim(); if (n.length > 3) { fields.full_name = n; break; } }
-  }
+  const nameMatch = cleaned.match(/(?:الاسم|اسم)\s*[:\-]?\s*([^\d\r\n]{4,60}?)(?:\s{2,}|\s*\d|\s*رقم)/i);
+  if (nameMatch) { const n = nameMatch[1].trim(); if (n.length > 3) fields.full_name = n; }
   
   // المصدر
-  const issuerMatch = cleaned.match(/(?:مصدرها|جهة\s*الإصدار)\s*[:\-]?\s*([^\d\r\n]{3,60}?)(?:\s{2,}|\d|$)/i);
-  if (issuerMatch) fields.issuer = issuerMatch[1].trim();
-  if (!fields.issuer) {
-    const w = cleaned.match(/(وزارة[^\d\r\n]{2,30}?)(?:\s{2,}|\d|$)/);
-    if (w) fields.issuer = w[1].trim();
-  }
+  const issueM = cleaned.match(/مصدرها\s*[:\-]?\s*([^\d\r\n]{3,50}?)(?:\s{2,}|\d|$)/i);
+  if (issueM) fields.issuer = issueM[1].trim();
   
   // Dates
-  const allDates = [];
-  const dateRegex = /(\d{1,4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,4})/g;
-  let match;
-  while ((match = dateRegex.exec(cleaned)) !== null) {
-    allDates.push({ raw: match[0], d1: match[1], d2: match[2], d3: match[3], pos: match.index });
+  const dates = [];
+  let m;
+  const dr = /(\d{1,4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,4})/g;
+  while ((m = dr.exec(cleaned)) !== null) {
+    const ctx = cleaned.slice(Math.max(0, m.index - 40), m.index + 5);
+    dates.push({ d1: m[1], d2: m[2], d3: m[3], ctx, pos: m.index });
   }
   
-  allDates.forEach(d => {
-    const context = cleaned.slice(Math.max(0, d.pos - 50), d.pos + 15);
-    if (/انتهاء|تنتهي|صالحة|expiry|valid/i.test(context)) {
-      fields.expiry_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
-    } else if (/الميلاد|ميلاد|ازدياد|birth/i.test(context)) {
-      fields.birth_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
-    } else if (/إصدار|اصدار|صدر|issue/i.test(context)) {
-      fields.issue_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
+  dates.forEach(d => {
+    if (/انتهاء|تنتهي|صالحة|expiry/i.test(d.ctx)) {
+      fields.expiry_date = d.d3.length === 4 ? `${d.d3}/${d.d2.padStart(2,'0')}/${d.d1.padStart(2,'0')}` : d.raw;
+    } else if (/الميلاد|ميلاد|birth/i.test(d.ctx)) {
+      fields.birth_date = d.d3.length === 4 ? `${d.d3}/${d.d2.padStart(2,'0')}/${d.d1.padStart(2,'0')}` : d.raw;
+    } else if (/إصدار|اصدار|صدر|issue/i.test(d.ctx)) {
+      fields.issue_date = d.d3.length === 4 ? `${d.d3}/${d.d2.padStart(2,'0')}/${d.d1.padStart(2,'0')}` : d.raw;
     }
   });
   
-  // If unclassified dates exist, try to assign by position
-  if (allDates.length >= 2) {
-    if (!fields.issue_date) {
-      const d = allDates[0];
-      fields.issue_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
-    }
-    if (!fields.expiry_date) {
-      const d = allDates[allDates.length - 1];
-      fields.expiry_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
-    }
+  // Fallback: assign dates
+  if (dates.length >= 2 && !fields.issue_date && !fields.expiry_date) {
+    const sorted = dates.sort((a,b) => a.pos - b.pos);
+    const first = sorted[0], last = sorted[sorted.length-1];
+    fields.issue_date = first.d3.length === 4 ? `${first.d3}/${first.d2}/${first.d1}` : first.raw;
+    fields.expiry_date = last.d3.length === 4 ? `${last.d3}/${last.d2}/${last.d1}` : last.raw;
   }
   
   // العمر
-  const ageMatch = cleaned.match(/(?:العمر|عمر|السن)\s*[:\-]?\s*(\d+)\s*(?:سنة|عام)/i);
-  if (ageMatch) fields.age = ageMatch[1];
-  else if (fields.birth_date) {
-    try {
-      const parts = fields.birth_date.split('-');
-      let year = parseInt(parts[0]);
-      if (year > 2026 || year < 1900) year = parseInt(parts[2]);
-      if (year > 1900 && year < 2026) fields.age = String(new Date().getFullYear() - year);
-    } catch(e) {}
+  if (fields.birth_date) {
+    const parts = fields.birth_date.split('/');
+    let year = parseInt(parts[0]);
+    if (year > 2026 || year < 1900) year = parseInt(parts[2]);
+    if (year > 1900 && year < 2026) fields.age = String(new Date().getFullYear() - year);
   }
-  
-  // Clean
-  Object.keys(fields).forEach(k => { if (fields[k]) fields[k] = fields[k].trim(); });
   
   return fields;
 }
