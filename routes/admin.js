@@ -1007,6 +1007,18 @@ router.post('/consultant-categories/remove', requireAdmin, (req, res) => {
   res.redirect('/admin/consultant-categories');
 });
 
+// 🎤 تحديث إعدادات المكالمات الصوتية
+router.post('/consultant-categories/voice', requireAdmin, (req, res) => {
+  const db = getDB();
+  const { id, voice_enabled, voice_price_min } = req.body;
+  const enabled = voice_enabled === '1' ? 1 : 0;
+  const price = parseFloat(voice_price_min) || 5;
+  db.runStmt('UPDATE consultant_categories SET voice_enabled = ?, voice_price_per_minute = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    enabled, price, id);
+  req.session.success_msg = enabled ? '✅ تم تفعيل المكالمات الصوتية' : '❌ تم إلغاء المكالمات الصوتية';
+  res.redirect('/admin/consultant-categories');
+});
+
 // =====================================================================
 // 💰 WALLET MANAGEMENT
 // =====================================================================

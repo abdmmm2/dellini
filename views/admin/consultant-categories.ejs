@@ -84,6 +84,22 @@
                       <td><span class="badge bg-info"><%= l.category_name %></span></td>
                       <td class="fw-bold text-success"><%= l.price %> ريال</td>
                       <td>
+                        <form action="/admin/consultant-categories/voice" method="POST" class="d-inline">
+                          <input type="hidden" name="id" value="<%= l.id %>">
+                          <div class="d-flex align-items-center gap-1" style="min-width:200px">
+                            <div class="form-check form-switch mb-0">
+                              <input class="form-check-input" type="checkbox" name="voice_enabled" value="1" 
+                                <%= l.voice_enabled ? 'checked' : '' %>
+                                id="v_<%= l.id %>"
+                                onchange="document.getElementById('vp_<%= l.id %>').style.display = this.checked ? 'flex' : 'none'">
+                            </div>
+                            <input type="number" name="voice_price_min" class="form-control form-control-sm" style="width:55px;display:<%= l.voice_enabled ? 'block' : 'none' %>" id="vp_<%= l.id %>" value="<%= l.voice_price_per_minute || 5 %>" placeholder="س/د">
+                            <span class="small text-muted" style="display:<%= l.voice_enabled ? 'inline' : 'none' %>" id="vpl_<%= l.id %>">ر.س/د</span>
+                            <button type="submit" class="btn btn-sm btn-outline-primary p-1"><i class="bi bi-check"></i></button>
+                          </div>
+                        </form>
+                      </td>
+                      <td>
                         <form action="/admin/consultant-categories/remove" method="POST" class="d-inline"
                           onsubmit="return confirm('إلغاء ربط المستشار بهذا القسم؟')">
                           <input type="hidden" name="id" value="<%= l.id %>">
