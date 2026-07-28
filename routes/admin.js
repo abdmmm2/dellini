@@ -668,6 +668,46 @@ router.get('/user/edit/:id', requireAdmin, (req, res) => {
   res.render('admin/edit-user', { title: 'تعديل المستخدم', user, consultant, verificationTiers: VERIFICATION_TIERS, walletTransactions });
 });
 
+// صفحة إضافة مستخدم جديد
+router.get('/user/add', requireAdmin, (req, res) => {
+  res.render('admin/add-user', { title: 'إضافة مستخدم جديد' });
+});
+
+router.post('/user/add', requireAdmin, (req, res) => {
+  const db = getDB();
+  const bcrypt = require('bcryptjs');
+  const { name, email, phone, password, confirm_password, role } = req.body;
+  
+  if (!name || !email || !password) {
+    req.session.error_msg = 'جميع الحقول المطلوبة يجب أن تمتلئ';
+    return res.redirect('/admin/user/add');
+  }
+  if (password !== confirm_password) {
+    req.session.error_msg = 'كلمة المرور غير متطابقة';
+    return res.redirect('/admin/user/add');
+  }
+  
+  const existing = db.get('SELECT id FROM users WHERE email = ?', email);
+  if (existing) {
+    req.session.error_msg = 'البريد الإلكتروني مستخدم بالفعل';
+    return res.redirect('/admin/user/add');
+  }
+  
+  const allowedRoles = ['client', 'consultant', 'supervisor', 'admin'];
+  const userRole = allowedRoles.includes(role) ? role : 'client';
+  
+  const hashed = bcrypt.hashSync(password, 10);
+  const result = db.runStmt('INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, ?)',
+    name, email, phone || null, hashed, userRole);
+  
+  if (userRole === 'consultant') {
+    db.runStmt('INSERT INTO consultants (user_id, bio) VALUES (?, ?)', result.lastInsertRowid, '');
+  }
+  
+  req.session.success_msg = `✅ تم إنشاء حساب ${userRole === 'admin' ? 'مدير' : userRole === 'supervisor' ? 'مشرف' : userRole === 'consultant' ? 'مستشار' : 'عميل'} بنجاح`;
+  res.redirect('/admin/users');
+});
+
 router.post('/user/edit/:id', requireAdmin, uploadAvatar.single('avatar'), (req, res) => {
   const db = getDB();
   const bcrypt = require('bcryptjs');

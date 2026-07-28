@@ -1,0 +1,49 @@
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm" style="border-radius:14px">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-person-plus"></i> إضافة مستخدم جديد</h5>
+            <a href="/admin" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-right"></i> رجوع</a>
+          </div>
+
+          <form method="POST" action="/admin/user/add">
+            <div class="mb-3">
+              <label class="form-label">الاسم الكامل *</label>
+              <input type="text" name="name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">البريد الإلكتروني *</label>
+              <input type="email" name="email" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">رقم الجوال</label>
+              <input type="tel" name="phone" class="form-control" dir="ltr">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">كلمة المرور *</label>
+              <input type="password" name="password" class="form-control" required minlength="6">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">تأكيد كلمة المرور *</label>
+              <input type="password" name="confirm_password" class="form-control" required minlength="6">
+            </div>
+            <div class="mb-4">
+              <label class="form-label">الدور *</label>
+              <select name="role" class="form-select" required>
+                <option value="client">👤 عميل</option>
+                <option value="consultant">💼 مستشار</option>
+                <option value="supervisor">🛡️ مشرف</option>
+                <option value="admin">👑 مدير</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-success w-100">
+              <i class="bi bi-person-plus"></i> إضافة المستخدم
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
