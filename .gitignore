@@ -7,4 +7,5 @@ dellini.db-journal
 npm-debug.log*
 .claude/
 memory/
+*.traineddata
 
