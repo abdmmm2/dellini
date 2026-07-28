@@ -1328,14 +1328,10 @@ router.get('/backup', requireAdmin, (req, res) => {
 // إنشاء نسخة احتياطية
 router.post('/backup/create', requireAdmin, (req, res) => {
   try {
-    const { getDB, saveDB } = require('../database');
     const db = getDB();
     
-    // Force save to disk first
-    saveDB();
-    
-    // Get current DB file
-    const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'dellini.db');
+    // Get current DB file path
+    const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'dellini.db');
     
     // Make sure backups dir exists
     if (!fs.existsSync(backupsPath)) {
@@ -1346,16 +1342,24 @@ router.post('/backup/create', requireAdmin, (req, res) => {
     const backupName = `dellini-backup-${timestamp}.db`;
     const backupPath = path.join(backupsPath, backupName);
     
-    // Copy the DB file
-    if (fs.existsSync(DB_PATH)) {
-      fs.copyFileSync(DB_PATH, backupPath);
-      req.session.success_msg = `✅ تم إنشاء النسخة الاحتياطية: ${backupName}`;
+    // Force DB save to disk first
+    try {
+      const data = db.export();
+      fs.writeFileSync(dbPath, Buffer.from(data));
+    } catch(e) {
+      return res.json({ error: 'فشل حفظ قاعدة البيانات: ' + e.message });
+    }
+    
+    // Copy the DB file to backups
+    if (fs.existsSync(dbPath)) {
+      fs.copyFileSync(dbPath, backupPath);
+      req.session.success_msg = `✅ تم إنشاء النسخة: ${backupName} (${(fs.statSync(backupPath).size / 1024).toFixed(1)} KB)`;
     } else {
-      req.session.error_msg = `❌ قاعدة البيانات غير موجودة في: ${DB_PATH}`;
+      req.session.error_msg = `❌ الملف غير موجود: ${dbPath}`;
     }
   } catch(err) {
-    console.error('❌ Backup error:', err);
-    req.session.error_msg = `❌ فشل إنشاء النسخة: ${err.message}`;
+    console.error('❌ Backup error:', err.message, err.stack);
+    req.session.error_msg = `❌ ${err.message}`;
   }
   res.redirect('/admin/backup');
 });

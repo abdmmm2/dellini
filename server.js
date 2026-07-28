@@ -3,6 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
+const fs = require('fs');
 const { initializeDatabase, seedDatabase } = require('./database');
 
 const app = express();
