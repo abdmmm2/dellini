@@ -283,22 +283,27 @@ async function initializeDatabase() {
 
   // Auto-create "استشارات حقوقية" category + services if missing
   try {
-    const result = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
-    if (!result.length || !result[0].values.length) {
+    const catResult = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
+    let catId;
+    if (!catResult.length || !catResult[0].values.length) {
       db.runStmt("INSERT INTO categories (name_ar, description, icon, sort_order) VALUES (?, ?, ?, ?)",
         'استشارات حقوقية', 'استشارات قانونية وحقوقية', 'bi-bank', 6);
-      const catResult = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
-      const catId = catResult[0].values[0][0];
-      const svcs = [
-        'استشارة قانونية', 'حضور جلسة', 'صياغة عقد',
+      const r = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
+      catId = r[0].values[0][0];
+    } else {
+      catId = catResult[0].values[0][0];
+    }
+    // Check if services already exist under this category
+    const existingServices = db.exec("SELECT COUNT(*) as c FROM services WHERE category_id = " + catId);
+    if (existingServices[0].values[0][0] == 0) {
+      const svcs = ['استشارة قانونية', 'حضور جلسة', 'صياغة عقد',
         'مذكرة أو تحرير عقد', 'لائحة اعتراضية', 'توكيل محامي',
-        'مراجعة دوائر حكومية', 'التوثيق'
-      ];
+        'مراجعة دوائر حكومية', 'التوثيق'];
       svcs.forEach((name, i) => {
         db.runStmt("INSERT INTO services (category_id, name_ar, description, icon, sort_order) VALUES (?, ?, ?, ?, ?)",
           catId, name, name, 'bi-file-text', i);
       });
-      console.log('📁 استشارات حقوقية + 8 خدمات منشأة تلقائيًا');
+      console.log('📁 8 خدمات حقوقية منشأة تلقائيًا');
     }
   } catch(e) { console.error('Error creating legal services:', e); }
 
