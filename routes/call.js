@@ -52,6 +52,23 @@ router.get('/:consultationId', requireLogin, (req, res) => {
   const roomName = `dellini_${consultation.id}_${Date.now()}`;
   const displayName = isClient ? (req.session.user.name || 'عميل') : (req.session.user.name || 'مستشار');
 
+  // 🔔 Send notification to other party
+  try {
+    const otherUserId = isClient ? 
+      db.get('SELECT user_id FROM consultants WHERE id = ?', consultation.consultant_id)?.user_id :
+      consultation.client_id;
+    if (otherUserId) {
+      db.runStmt(`INSERT INTO notifications (user_id, title, message, type, related_id, related_type)
+        VALUES (?, ?, ?, 'call', ?, 'call')`,
+        otherUserId,
+        '📞 مكالمة واردة',
+        `${displayName} يريد الاتصال بك في الاستشارة #${consultation.id}`,
+        consultation.id);
+    }
+  } catch(e) {}
+
+  // Get voice settings
+
   // Get voice settings
   const settings = {};
   const rows = db.all('SELECT * FROM payment_settings');
