@@ -60,7 +60,11 @@
     <% onlineConsultants.forEach(con => { %>
       <div class="online-consultant-card" onclick="showConsultantProfile('<%= con.id %>', '<%= con.user_name %>', '<%= con.bio ? con.bio.replace(/'/g, "\\'") : "" %>', '<%= con.category_name || "" %>', '<%= con.rating %>', '<%= con.completed_count %>', '<%= con.last_active %>', '<%= con.verification_tier || "none" %>')">
         <div class="online-avatar-wrapper">
-          <div class="online-avatar"><%= con.user_name.charAt(0) %></div>
+          <% if (con.avatar) { %>
+            <img src="<%= con.avatar %>" class="online-avatar-img" alt="">
+          <% } else { %>
+            <div class="online-avatar"><%= con.user_name.charAt(0) %></div>
+          <% } %>
           <span class="online-indicator"></span>
         </div>
         <div class="online-name"><%= con.user_name %></div>
@@ -145,7 +149,11 @@
       <div class="col-6">
         <div class="card consultant-card" onclick="showConsultantProfile('<%= con.id %>', '<%= con.user_name %>', '<%= con.bio ? con.bio.replace(/'/g, "\\'") : "" %>', '', '<%= con.rating %>', '<%= con.completed_count %>', '', '<%= con.verification_tier || "none" %>')">
           <div class="text-center">
-            <div class="avatar mx-auto" style="width:50px;height:50px;font-size:1.2rem;"><%= con.user_name.charAt(0) %></div>
+            <% if (con.avatar) { %>
+              <img src="<%= con.avatar %>" class="avatar mx-auto" style="width:50px;height:50px;border-radius:50%;object-fit:cover" alt="">
+            <% } else { %>
+              <div class="avatar mx-auto" style="width:50px;height:50px;font-size:1.2rem;"><%= con.user_name.charAt(0) %></div>
+            <% } %>
             <h6 class="fw-bold mt-2 mb-0" style="font-size:0.9rem;"><%= con.user_name %></h6>
             <%- include("partials/verify-badge", { tier: con.verification_tier || "none" }) %>
             <div class="small text-muted mt-1">
@@ -273,6 +281,7 @@
 .online-name { font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; color: #333; }
 .online-specialty { font-size: 0.65rem; color: #666; background: #f0fdf4; display: inline-block; padding: 2px 8px; border-radius: 10px; border: 1px solid #bbf7d0; }
 .online-dot { display: inline-block; width: 10px; height: 10px; background: #22c55e; border-radius: 50%; animation: onlinePulse 2s ease-in-out infinite; margin-left: 6px; vertical-align: middle; }
+.online-avatar-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 3px solid #e9ecef; display: block; }
 
 /* Category Cards - 2 columns */
 .category-card {
