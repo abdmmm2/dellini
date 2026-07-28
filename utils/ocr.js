@@ -1,51 +1,35 @@
 // OCR utility for Saudi National ID card
-const Tesseract = require('tesseract.js');
-const path = require('path');
+// Uses OCR.space API (free, 25K requests/month, excellent Arabic support)
 const fs = require('fs');
-const sharp = require('sharp');
+const path = require('path');
+const https = require('https');
+
+const OCR_API_KEY = process.env.OCR_API_KEY || 'helloworld'; // Free tier key
 
 /**
- * Pre-process image for better OCR (resize, convert to grayscale, increase contrast)
- */
-async function preprocessImage(inputPath, outputPath) {
-  try {
-    await sharp(inputPath)
-      .resize({ width: 1200, withoutEnlargement: false })
-      .grayscale()
-      .normalise()
-      .jpeg({ quality: 90 })
-      .toFile(outputPath);
-    return outputPath;
-  } catch (e) {
-    console.error('Image preprocessing error:', e.message);
-    return inputPath;
-  }
-}
-
-/**
- * Extract text from an ID card image using Tesseract OCR
+ * Extract text from an ID card image using OCR.space API
  */
 async function scanNationalId(imagePath) {
   try {
     console.log('🔍 OCR: processing', imagePath);
     
-    // Preprocess image for better OCR
-    const processedPath = imagePath.replace(/(\.\w+)$/, '-processed$1');
-    const sharpPath = await preprocessImage(imagePath, processedPath);
+    // Read image as base64
+    const imageData = fs.readFileSync(imagePath);
+    const base64 = imageData.toString('base64');
     
-    // Run OCR with Arabic + English
-    const { data } = await Tesseract.recognize(sharpPath, 'ara+eng', {
-      logger: () => {},
-    });
+    // Call OCR.space API
+    const result = await callOcrSpace(base64);
     
-    const rawText = data.text || '';
-    console.log('📝 OCR raw text (first 500 chars):', rawText.slice(0, 500));
+    if (!result || !result.ParsedResults || !result.ParsedResults.length) {
+      console.log('⚠️ OCR: No results');
+      return { rawText: '', fields: {} };
+    }
+    
+    const rawText = result.ParsedResults[0].ParsedText || '';
+    console.log('📝 OCR text (first 500):', rawText.slice(0, 500));
     
     const fields = extractFields(rawText);
-    console.log('📋 Extracted fields:', JSON.stringify(fields));
-    
-    // Clean up processed file
-    try { fs.unlinkSync(processedPath); } catch(e) {}
+    console.log('📋 Fields:', JSON.stringify(fields));
     
     return { rawText, fields };
   } catch (err) {
@@ -55,129 +39,129 @@ async function scanNationalId(imagePath) {
 }
 
 /**
+ * Call OCR.space API
+ */
+function callOcrSpace(base64Image) {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify({
+      base64Image: `data:image/jpeg;base64,${base64Image}`,
+      language: 'ara',  // Arabic
+      OCREngine: 2,      // More accurate engine
+      isTable: false,
+      detectOrientation: true,
+      scale: true,
+    });
+    
+    const options = {
+      hostname: 'api.ocr.space',
+      path: '/parse/image',
+      method: 'POST',
+      headers: {
+        'apikey': OCR_API_KEY,
+        'Content-Type': 'application/json',
+      },
+    };
+    
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.IsErroredOnProcessing) {
+            reject(new Error(parsed.ErrorMessage || 'OCR API error'));
+          } else {
+            resolve(parsed);
+          }
+        } catch(e) {
+          reject(e);
+        }
+      });
+    });
+    
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
+  });
+}
+
+/**
  * Extract structured fields from OCR text - Saudi National ID card
  */
 function extractFields(text) {
   const fields = {};
   
   // Normalize text
-  let cleaned = text
-    .replace(/[\s\n\r]+/g, ' ')   // collapse whitespace
-    .replace(/[ـ\-_]+/g, '')      // remove tatweel/dashes
-    .replace(/[｜|]/g, '')        // remove pipe chars
-    .trim();
+  let cleaned = text.replace(/[\s\n\r]+/g, ' ').replace(/[ـ\-_]+/g, '').trim();
   
-  // Debug: show cleaned text
-  console.log('📋 Cleaned text:', cleaned.slice(0, 300));
-  
-  // =============================================
   // رقم الهوية (10 digits, starts with 1)
-  // =============================================
-  // Try: explicit label followed by number
   const idPatterns = [
-    /رقم\s*(?:الهوية|المدني|الوطني|الحوالة)\s*[:\-]?\s*(\d{10,})/i,
-    /الهوية\s*(?:الوطنية)?\s*[:\-]?\s*(\d{10,})/i,
-    /الرقم\s*(?:الوطني)?\s*[:\-]?\s*(\d{10,})/i,
+    /رقم\s*(?:الهوية|المدني|الوطني)\s*[:\-]?\s*(\d{10,})/i,
+    /(?:الهوية\s*الوطنية|الرقم\s*الوطني)\s*[:\-]?\s*(\d{10,})/i,
   ];
   for (const p of idPatterns) {
     const m = cleaned.match(p);
     if (m) { fields.id_number = m[1].slice(0, 10); break; }
   }
-  // Fallback: standalone 10-digit number starting with 1
   if (!fields.id_number) {
     const fb = cleaned.match(/\b(1\d{9})\b/);
     if (fb) fields.id_number = fb[1];
   }
   
-  // =============================================
-  // رقم الإصدار (Issue Number) - 8+ digits
-  // =============================================
-  // (Used to find name context)
-  
-  // =============================================
-  // الاسم (Name)
-  // =============================================
+  // الاسم
   const namePatterns = [
-    /الاسم\s*[:\-]?\s*([^\d\r\n]{4,60}?)(?:\s{2,}|\s+\d|\s*رقم|$)/i,
-    /اسم\s*[:\-]?\s*([^\d\r\n]{4,60}?)(?:\s{2,}|\s+\d|\s*رقم|$)/i,
-    /([^\d\r\n]{4,60})\s*رقم\s*(?:الهوية|المدني)/i,
+    /الاسم\s*[:\-]?\s*([^\d\r\n]{4,60}?)(?:\s{2,}|\s*\d|\s*رقم)/i,
+    /اسم\s*[:\-]?\s*([^\d\r\n]{4,60}?)(?:\s{2,}|\s*\d)/i,
   ];
   for (const p of namePatterns) {
     const m = cleaned.match(p);
-    if (m) {
-      const n = m[1].replace(/[^\\u0600-\\u06FF\\s]/g, '').trim();
-      if (n.length > 3) { fields.full_name = n; break; }
-    }
+    if (m) { const n = m[1].trim(); if (n.length > 3) { fields.full_name = n; break; } }
   }
   
-  // =============================================
-  // مصدرها (Issuer) - usually وزارة الداخلية
-  // =============================================
-  const issuerMatch = cleaned.match(/(?:مصدرها|جهة\s*(?:الإصدار|الاصدار)|جهة)\s*[:\-]?\s*([^\d\r\n]{3,50}?)(?:\s{2,}|\d|$)/i);
-  if (issuerMatch) {
-    fields.issuer = issuerMatch[1].trim();
-  }
+  // المصدر
+  const issuerMatch = cleaned.match(/(?:مصدرها|جهة\s*الإصدار)\s*[:\-]?\s*([^\d\r\n]{3,60}?)(?:\s{2,}|\d|$)/i);
+  if (issuerMatch) fields.issuer = issuerMatch[1].trim();
   if (!fields.issuer) {
     const w = cleaned.match(/(وزارة[^\d\r\n]{2,30}?)(?:\s{2,}|\d|$)/);
     if (w) fields.issuer = w[1].trim();
   }
   
-  // =============================================
-  // Dates (various)
-  // =============================================
-  // Find all date-like patterns: DD/MM/YYYY or YYYY/MM/DD
-  // Saudi ID usually has dates in format: DD/MM/YYYY or DD-MM-YYYY
+  // Dates
   const allDates = [];
-  const dateRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/g;
+  const dateRegex = /(\d{1,4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,4})/g;
   let match;
   while ((match = dateRegex.exec(cleaned)) !== null) {
-    allDates.push({
-      raw: match[0],
-      d1: match[1], d2: match[2], d3: match[3],
-      pos: match.index
-    });
+    allDates.push({ raw: match[0], d1: match[1], d2: match[2], d3: match[3], pos: match.index });
   }
   
-  // Classify dates based on surrounding context
-  allDates.forEach((d, i) => {
-    const context = cleaned.slice(Math.max(0, d.pos - 40), d.pos + 10);
-    
-    // Check for expiry indicators
+  allDates.forEach(d => {
+    const context = cleaned.slice(Math.max(0, d.pos - 50), d.pos + 15);
     if (/انتهاء|تنتهي|صالحة|expiry|valid/i.test(context)) {
       fields.expiry_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
-    }
-    // Check for birth indicators  
-    else if (/الميلاد|ميلاد|ازدياد|birth/i.test(context)) {
+    } else if (/الميلاد|ميلاد|ازدياد|birth/i.test(context)) {
       fields.birth_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
-    }
-    // Check for issue indicators
-    else if (/إصدار|اصدار|صدر|issue/i.test(context)) {
+    } else if (/إصدار|اصدار|صدر|issue/i.test(context)) {
       fields.issue_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
     }
   });
   
-  // If dates found but not classified, try to assign by position
-  if (allDates.length >= 2 && !fields.expiry_date && !fields.issue_date) {
-    // The last date is usually expiry
-    if (!fields.expiry_date) {
-      const d = allDates[allDates.length - 1];
-      fields.expiry_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
-    }
-    // The first date is usually issue
+  // If unclassified dates exist, try to assign by position
+  if (allDates.length >= 2) {
     if (!fields.issue_date) {
       const d = allDates[0];
       fields.issue_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
     }
+    if (!fields.expiry_date) {
+      const d = allDates[allDates.length - 1];
+      fields.expiry_date = d.d3.length === 4 ? `${d.d3}-${d.d2.padStart(2,'0')}-${d.d1.padStart(2,'0')}` : d.raw;
+    }
   }
   
-  // =============================================
-  // العمر (Age)
-  // =============================================
+  // العمر
   const ageMatch = cleaned.match(/(?:العمر|عمر|السن)\s*[:\-]?\s*(\d+)\s*(?:سنة|عام)/i);
   if (ageMatch) fields.age = ageMatch[1];
   else if (fields.birth_date) {
     try {
-      // Try YYYY-MM-DD or DD-MM-YYYY
       const parts = fields.birth_date.split('-');
       let year = parseInt(parts[0]);
       if (year > 2026 || year < 1900) year = parseInt(parts[2]);
@@ -185,10 +169,8 @@ function extractFields(text) {
     } catch(e) {}
   }
   
-  // Clean up
-  Object.keys(fields).forEach(k => {
-    if (fields[k]) fields[k] = fields[k].trim();
-  });
+  // Clean
+  Object.keys(fields).forEach(k => { if (fields[k]) fields[k] = fields[k].trim(); });
   
   return fields;
 }
