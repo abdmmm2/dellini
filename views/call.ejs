@@ -123,7 +123,20 @@
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         
-        peer = new SimplePeer({ initiator: true, stream: localStream, trickle: false });
+        peer = new SimplePeer({ 
+          initiator: true, 
+          stream: localStream, 
+          trickle: false,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' },
+              { urls: 'stun:stun3.l.google.com:19302' },
+              { urls: 'stun:stun4.l.google.com:19302' },
+            ]
+          }
+        });
         
         peer.on('signal', signal => {
           socket.emit('signal', { roomId, signal });
@@ -155,12 +168,11 @@
     }
 
     // Listen for signals from other peer
-    socket.on('signal', (data) => {
+    socket.on('signal', async (data) => {
       if (!peer) {
-        // We are the second peer (not initiator)
-        startCallAsReceiver();
+        await startCallAsReceiver();
       }
-      if (peer) {
+      if (peer && data.signal) {
         peer.signal(data.signal);
       }
     });
@@ -169,7 +181,20 @@
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         
-        peer = new SimplePeer({ initiator: false, stream: localStream, trickle: false });
+        peer = new SimplePeer({ 
+          initiator: false, 
+          stream: localStream, 
+          trickle: false,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' },
+              { urls: 'stun:stun3.l.google.com:19302' },
+              { urls: 'stun:stun4.l.google.com:19302' },
+            ]
+          }
+        });
         
         peer.on('signal', signal => {
           socket.emit('signal', { roomId, signal });
