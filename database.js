@@ -283,20 +283,24 @@ async function initializeDatabase() {
 
   // Auto-create "استشارات حقوقية" category + services if missing
   try {
-    const existing = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
-    if (!existing.length || !existing[0].values.length) {
-      db._rawRun("INSERT INTO categories (name_ar, description, icon, sort_order) VALUES ('استشارات حقوقية', 'استشارات قانونية وحقوقية', 'bi-bank', 6)");
-      const catId = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'").values[0][0];
-      const services = [
-        ['استشارة قانونية', 0], ['حضور جلسة', 1], ['صياغة عقد', 2],
-        ['مذكرة أو تحرير عقد', 3], ['لائحة اعتراضية', 4], ['توكيل محامي', 5],
-        ['مراجعة دوائر حكومية', 6], ['التوثيق', 7]
+    const result = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
+    if (!result.length || !result[0].values.length) {
+      db.runStmt("INSERT INTO categories (name_ar, description, icon, sort_order) VALUES (?, ?, ?, ?)",
+        'استشارات حقوقية', 'استشارات قانونية وحقوقية', 'bi-bank', 6);
+      const catResult = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
+      const catId = catResult[0].values[0][0];
+      const svcs = [
+        'استشارة قانونية', 'حضور جلسة', 'صياغة عقد',
+        'مذكرة أو تحرير عقد', 'لائحة اعتراضية', 'توكيل محامي',
+        'مراجعة دوائر حكومية', 'التوثيق'
       ];
-      services.forEach(([name, sort]) => {
-        db._rawRun("INSERT INTO services (category_id, name_ar, description, icon, sort_order) VALUES (?, ?, ?, 'bi-file-text', ?)", catId, name, name, sort);
+      svcs.forEach((name, i) => {
+        db.runStmt("INSERT INTO services (category_id, name_ar, description, icon, sort_order) VALUES (?, ?, ?, ?, ?)",
+          catId, name, name, 'bi-file-text', i);
       });
+      console.log('📁 استشارات حقوقية + 8 خدمات منشأة تلقائيًا');
     }
-  } catch(e) { console.error('Error creating legal services:', e.message); }
+  } catch(e) { console.error('Error creating legal services:', e); }
 
   // Bank transfers table
   db._rawRun(`
