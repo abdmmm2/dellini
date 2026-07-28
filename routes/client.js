@@ -422,14 +422,35 @@ router.get('/settings', (req, res) => {
 });
 
 router.post('/settings/upload-id', uploadId.single('national_id'), async (req, res) => {
-  if (!req.file) {
-    req.session.error_msg = '❌ يرجى اختيار ملف';
+  const { id_photo_data } = req.body;
+  if (!req.file && !id_photo_data) {
+    req.session.error_msg = '❌ يرجى تصوير الهوية أو اختيار صورة';
     return res.redirect('/client/settings');
   }
   try {
     const db = getDB();
-    const imagePath = '/uploads/ids/' + req.file.filename;
-    const fullPath = req.file.path;
+    let imagePath, fullPath;
+    
+    if (req.file) {
+      imagePath = '/uploads/ids/' + req.file.filename;
+      fullPath = req.file.path;
+    } else if (id_photo_data) {
+      const matches = id_photo_data.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        const filename = 'id-cam-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+        const idsDir = path.join(__dirname, '..', 'public', 'uploads', 'ids');
+        if (!fs.existsSync(idsDir)) fs.mkdirSync(idsDir, { recursive: true });
+        fullPath = path.join(idsDir, filename);
+        fs.writeFileSync(fullPath, Buffer.from(matches[2], 'base64'));
+        imagePath = '/uploads/ids/' + filename;
+      }
+    }
+    
+    if (!imagePath) {
+      req.session.error_msg = '❌ فشل حفظ الصورة';
+      return res.redirect('/client/settings');
+    }
     
     // Try OCR
     try {

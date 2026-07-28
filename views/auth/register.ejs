@@ -79,16 +79,76 @@
                 <i class="bi bi-card-text text-primary"></i> الهوية الوطنية <span class="text-danger">*</span>
               </label>
               <div class="card border-0 bg-light p-3" style="border-radius:12px">
-                <div class="text-center mb-2">
-                  <i class="bi bi-camera fs-1 text-muted"></i>
-                  <p class="small text-muted mb-2">صورة واضحة للهوية (الوجه الأمامي)</p>
+                <div class="text-center mb-2" id="idCameraBtn">
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="openIdCamera()">
+                    <i class="bi bi-camera"></i> تصوير الهوية
+                  </button>
+                  <p class="small text-muted mt-1 mb-0">أو اختر من المعرض</p>
                 </div>
-                <input type="file" name="national_id" accept="image/*,.pdf" class="form-control form-control-sm" capture="environment">
-                <small class="text-muted mt-1">jpg, png, pdf — حد أقصى 5MB</small>
+                <!-- Camera preview -->
+                <div id="idCameraPreview" style="display:none">
+                  <video id="idVideo" autoplay playsinline style="width:100%;max-height:250px;border-radius:12px;background:#000"></video>
+                  <div class="d-flex gap-2 mt-2">
+                    <button type="button" class="btn btn-success btn-sm flex-fill" onclick="captureIdPhoto()">
+                      <i class="bi bi-camera"></i> تصوير
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="closeIdCamera()">
+                      <i class="bi bi-x-lg"></i> إلغاء
+                    </button>
+                  </div>
+                </div>
+                <!-- Preview after capture -->
+                <div id="idPhotoPreview" style="display:none">
+                  <canvas id="idCanvas" style="width:100%;max-height:250px;border-radius:12px"></canvas>
+                  <div class="d-flex gap-2 mt-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="retakeIdPhoto()">
+                      <i class="bi bi-arrow-counterclockwise"></i> إعادة التصوير
+                    </button>
+                  </div>
+                </div>
+                <input type="file" name="national_id" id="nationalIdInput" accept="image/*" class="form-control form-control-sm mt-2" style="display:none">
+                <input type="hidden" name="id_photo_data" id="idPhotoData">
+                <small class="text-muted mt-1">صور الهوية مشفرة وآمنة 🔒</small>
               </div>
             </div>
 
             <script>
+            let idStream = null;
+            function openIdCamera() {
+              document.getElementById('idCameraBtn').style.display = 'none';
+              document.getElementById('idCameraPreview').style.display = 'block';
+              document.getElementById('nationalIdInput').style.display = 'none';
+              navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } })
+                .then(stream => {
+                  idStream = stream;
+                  document.getElementById('idVideo').srcObject = stream;
+                })
+                .catch(() => {
+                  document.getElementById('nationalIdInput').click();
+                });
+            }
+            function captureIdPhoto() {
+              const video = document.getElementById('idVideo');
+              const canvas = document.getElementById('idCanvas');
+              canvas.width = video.videoWidth || 1280;
+              canvas.height = video.videoHeight || 720;
+              canvas.getContext('2d').drawImage(video, 0, 0);
+              // Save as base64
+              document.getElementById('idPhotoData').value = canvas.toDataURL('image/jpeg', 0.8);
+              closeIdCamera();
+              document.getElementById('idPhotoPreview').style.display = 'block';
+              document.getElementById('idCameraBtn').style.display = 'none';
+              document.getElementById('nationalIdInput').style.display = 'none';
+            }
+            function closeIdCamera() {
+              if (idStream) { idStream.getTracks().forEach(t => t.stop()); idStream = null; }
+              document.getElementById('idCameraPreview').style.display = 'none';
+            }
+            function retakeIdPhoto() {
+              document.getElementById('idPhotoPreview').style.display = 'none';
+              document.getElementById('idPhotoData').value = '';
+              openIdCamera();
+            }
             function toggleIdUpload() {
               const isClient = document.getElementById('roleClient').checked;
               document.getElementById('idUploadSection').style.display = isClient ? 'block' : 'none';
