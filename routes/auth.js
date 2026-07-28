@@ -67,7 +67,6 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
 
     const hashedPassword = bcrypt.hashSync(password, 10);
     // منع تسجيل حساب إداري من صفحة التسجيل (للأمان)
-    const userRole = (role === 'consultant') ? 'consultant' : 'client';
 
     const result = db.runStmt(
       'INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, ?)'
@@ -130,6 +129,7 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
           `, userId, imagePath);
         }
       }
+    }
 
     req.session.success_msg = 'تم إنشاء الحساب بنجاح، يمكنك تسجيل الدخول الآن';
     // Send welcome email (async, don't await)
