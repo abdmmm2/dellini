@@ -10,6 +10,7 @@
           </div>
 
           <form action="/login" method="POST">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="mb-3">
               <label class="form-label">البريد الإلكتروني</label>
               <div class="input-group">
