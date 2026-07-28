@@ -59,19 +59,49 @@
               <label class="form-label">نوع الحساب *</label>
               <div class="d-flex gap-3">
                 <div class="form-check">
-                  <input class="form-check-input" type="radio" name="role" value="client" id="roleClient" checked>
+                  <input class="form-check-input" type="radio" name="role" value="client" id="roleClient" checked onchange="toggleIdUpload()">
                   <label class="form-check-label" for="roleClient">
                     <i class="bi bi-person"></i> عميل
                   </label>
                 </div>
                 <div class="form-check">
-                  <input class="form-check-input" type="radio" name="role" value="consultant" id="roleConsultant">
+                  <input class="form-check-input" type="radio" name="role" value="consultant" id="roleConsultant" onchange="toggleIdUpload()">
                   <label class="form-check-label" for="roleConsultant">
                     <i class="bi bi-person-badge"></i> مستشار
                   </label>
                 </div>
               </div>
             </div>
+
+            <!-- 🆔 رفع الهوية الوطنية (للعملاء فقط) -->
+            <div class="mb-4" id="idUploadSection">
+              <label class="form-label fw-bold">
+                <i class="bi bi-card-text text-primary"></i> الهوية الوطنية <span class="text-danger">*</span>
+              </label>
+              <div class="card border-0 bg-light p-3" style="border-radius:12px">
+                <div class="text-center mb-2">
+                  <i class="bi bi-camera fs-1 text-muted"></i>
+                  <p class="small text-muted mb-2">صورة واضحة للهوية (الوجه الأمامي)</p>
+                </div>
+                <input type="file" name="national_id" accept="image/*,.pdf" class="form-control form-control-sm" capture="environment">
+                <small class="text-muted mt-1">jpg, png, pdf — حد أقصى 5MB</small>
+                <div id="ocrStatus" class="mt-2 small text-muted"></div>
+              </div>
+              <div id="ocrResult" class="mt-2" style="display:none">
+                <div class="card border-0 bg-light p-3" style="border-radius:12px">
+                  <h6 class="fw-bold mb-2"><i class="bi bi-check-circle text-success"></i> بيانات الهوية</h6>
+                  <div id="ocrFields" class="small"></div>
+                </div>
+              </div>
+            </div>
+
+            <script>
+            function toggleIdUpload() {
+              const isClient = document.getElementById('roleClient').checked;
+              document.getElementById('idUploadSection').style.display = isClient ? 'block' : 'none';
+            }
+            toggleIdUpload();
+            </script>
 
             <button type="submit" class="btn btn-primary w-100 btn-lg mb-3">
               <i class="bi bi-person-plus"></i> إنشاء الحساب

@@ -391,6 +391,39 @@ async function initializeDatabase() {
     )
   `);
 
+  // Identity verifications table (National ID OCR data)
+  db._rawRun(`
+    CREATE TABLE IF NOT EXISTS identity_verifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      full_name TEXT,
+      national_id TEXT,
+      id_number TEXT,
+      issuer TEXT,
+      issue_date TEXT,
+      expiry_date TEXT,
+      birth_date TEXT,
+      age TEXT,
+      ocr_raw_text TEXT,
+      image_path TEXT,
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending','verified','rejected')),
+      admin_note TEXT,
+      verified_by INTEGER,
+      verified_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+  try { db._rawRun("ALTER TABLE identity_verifications ADD COLUMN full_name TEXT"); } catch(e) {}
+  try { db._rawRun("ALTER TABLE identity_verifications ADD COLUMN id_number TEXT"); } catch(e) {}
+  try { db._rawRun("ALTER TABLE identity_verifications ADD COLUMN issuer TEXT"); } catch(e) {}
+  try { db._rawRun("ALTER TABLE identity_verifications ADD COLUMN issue_date TEXT"); } catch(e) {}
+  try { db._rawRun("ALTER TABLE identity_verifications ADD COLUMN expiry_date TEXT"); } catch(e) {}
+  try { db._rawRun("ALTER TABLE identity_verifications ADD COLUMN birth_date TEXT"); } catch(e) {}
+  try { db._rawRun("ALTER TABLE identity_verifications ADD COLUMN age TEXT"); } catch(e) {}
+  try { db._rawRun("ALTER TABLE identity_verifications ADD COLUMN ocr_raw_text TEXT"); } catch(e) {}
+
   // Auto-create "استشارات حقوقية" category + services (every startup, after all tables exist)
   try {
     const catResult = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");

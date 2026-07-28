@@ -1445,4 +1445,31 @@ router.post('/backup/upload-restore', requireAdmin, upload.single('dbfile'), (re
   res.redirect('/admin/backup');
 });
 
+// =====================================================================
+// 🆔 التحقق من الهويات (Identity Verification)
+// =====================================================================
+
+// Identity verification list
+router.get('/identity', requireAdmin, (req, res) => {
+  const db = getDB();
+  const verifications = db.all(`
+    SELECT iv.*, u.name as user_name, u.email, u.phone
+    FROM identity_verifications iv
+    JOIN users u ON u.id = iv.user_id
+    ORDER BY iv.created_at DESC
+  `);
+  res.render('admin/identity', { title: 'التحقق من الهويات', verifications });
+});
+
+// Approve / reject identity
+router.post('/identity/action', requireAdmin, (req, res) => {
+  const db = getDB();
+  const { id, action, note } = req.body;
+  const status = action === 'approve' ? 'verified' : 'rejected';
+  db.runStmt(`UPDATE identity_verifications SET status = ?, admin_note = ?, verified_by = ?, verified_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    status, note || null, req.session.user.id, id);
+  req.session.success_msg = action === 'approve' ? '✅ تم توثيق الهوية' : '❌ تم رفض الهوية';
+  res.redirect('/admin/identity');
+});
+
 module.exports = router;

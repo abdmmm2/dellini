@@ -1,8 +1,34 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const { getDB } = require('../database');
 const { sendWelcomeEmail } = require('../utils/email');
+
+// 🆔 ID image upload config
+const idStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '..', 'public', 'uploads', 'ids');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + ext);
+  }
+});
+const uploadId = multer({
+  storage: idStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg','.jpeg','.png','.gif','.webp','.bmp','.pdf'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error('فقط الصور والمستندات مسموحة'));
+  }
+});
 
 // Register page
 router.get('/register', (req, res) => {
@@ -10,9 +36,10 @@ router.get('/register', (req, res) => {
   res.render('auth/register', { title: 'إنشاء حساب جديد' });
 });
 
-// Register handler
-router.post('/register', (req, res) => {
+// Register handler (with optional ID upload for clients)
+router.post('/register', uploadId.single('national_id'), async (req, res) => {
   const { name, email, phone, password, confirm_password, role } = req.body;
+  const userRole = (role === 'consultant') ? 'consultant' : 'client';
 
   if (!name || !email || !password) {
     req.session.error_msg = 'جميع الحقول المطلوبة يجب أن تمتلئ';
@@ -49,6 +76,43 @@ router.post('/register', (req, res) => {
     // If consultant, create profile
     if (userRole === 'consultant') {
       db.runStmt('INSERT INTO consultants (user_id, bio) VALUES (?, ?)', result.lastInsertRowid, '');
+    }
+
+    // 🆔 Process National ID for clients
+    const userId = result.lastInsertRowid;
+    if (userRole === 'client' && req.file) {
+      const imagePath = '/uploads/ids/' + req.file.filename;
+      const fullPath = req.file.path;
+      
+      // Try OCR in background (don't block registration)
+      try {
+        const { scanNationalId } = require('../utils/ocr');
+        const ocrResult = await scanNationalId(fullPath);
+        
+        const fields = ocrResult.fields || {};
+        db.runStmt(`
+          INSERT INTO identity_verifications 
+            (user_id, full_name, id_number, issuer, issue_date, expiry_date, birth_date, age, ocr_raw_text, image_path, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+        `, userId,
+          fields.full_name || null,
+          fields.id_number || null,
+          fields.issuer || null,
+          fields.issue_date || null,
+          fields.expiry_date || null,
+          fields.birth_date || null,
+          fields.age || null,
+          ocrResult.rawText.slice(0, 1000) || null,
+          imagePath
+        );
+      } catch(ocrErr) {
+        console.error('OCR error:', ocrErr.message);
+        // Save ID image even if OCR fails
+        db.runStmt(`
+          INSERT INTO identity_verifications (user_id, image_path, status)
+          VALUES (?, ?, 'pending')
+        `, userId, imagePath);
+      }
     }
 
     req.session.success_msg = 'تم إنشاء الحساب بنجاح، يمكنك تسجيل الدخول الآن';

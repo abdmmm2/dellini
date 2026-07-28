@@ -1,0 +1,81 @@
+<div class="container py-3">
+  <h4 class="fw-bold mb-3"><i class="bi bi-card-text"></i> التحقق من الهويات</h4>
+
+  <% if (verifications.length === 0) { %>
+    <div class="text-center py-5">
+      <i class="bi bi-inbox fs-1 text-muted"></i>
+      <p class="text-muted mt-2">لا توجد طلبات توثيق هوية بعد</p>
+    </div>
+  <% } %>
+
+  <div class="row g-3">
+    <% verifications.forEach(v => { %>
+      <div class="col-12">
+        <div class="card shadow-sm" style="border-radius:14px;border:1px solid <%=
+          v.status === 'verified' ? '#198754' : v.status === 'rejected' ? '#dc3545' : '#ffc107'
+        %>">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="fw-bold mb-1"><%= v.user_name || 'غير معروف' %></h6>
+                <small class="text-muted"><%= v.email %> · 📞 <%= v.phone || '—' %></small>
+                <br>
+                <span class="badge <%=
+                  v.status === 'verified' ? 'bg-success' : v.status === 'rejected' ? 'bg-danger' : 'bg-warning text-dark'
+                %> mt-1">
+                  <%= v.status === 'verified' ? '✅ موثق' : v.status === 'rejected' ? '❌ مرفوض' : '⏳ قيد المراجعة' %>
+                </span>
+              </div>
+              <small class="text-muted"><%= v.created_at %></small>
+            </div>
+
+            <div class="row g-2 mt-2">
+              <% if (v.image_path) { %>
+                <div class="col-md-4">
+                  <img src="<%= v.image_path %>" class="img-fluid rounded" style="max-height:200px" alt="الهوية">
+                </div>
+              <% } %>
+              <div class="col-md">
+                <table class="table table-sm small mb-0">
+                  <tr><th>الاسم</th><td><%= v.full_name || '—' %></td></tr>
+                  <tr><th>رقم الهوية</th><td><%= v.id_number || '—' %></td></tr>
+                  <tr><th>تاريخ الإصدار</th><td><%= v.issue_date || '—' %></td></tr>
+                  <tr><th>تاريخ الانتهاء</th><td><%= v.expiry_date || '—' %></td></tr>
+                  <tr><th>تاريخ الميلاد</th><td><%= v.birth_date || '—' %></td></tr>
+                  <tr><th>العمر</th><td><%= v.age || '—' %></td></tr>
+                </table>
+              </div>
+            </div>
+
+            <% if (v.ocr_raw_text) { %>
+              <details class="mt-2">
+                <summary class="small text-muted">📝 النص المستخرج (OCR)</summary>
+                <pre class="small bg-light p-2 mt-1 rounded" style="max-height:100px;overflow:auto;white-space:pre-wrap;font-size:0.7rem;"><%= v.ocr_raw_text %></pre>
+              </details>
+            <% } %>
+
+            <% if (v.status === 'pending') { %>
+              <div class="d-flex gap-2 mt-2">
+                <form method="POST" action="/admin/identity/action" style="display:inline">
+                  <input type="hidden" name="id" value="<%= v.id %>">
+                  <input type="hidden" name="action" value="approve">
+                  <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-lg"></i> توثيق</button>
+                </form>
+                <form method="POST" action="/admin/identity/action" style="display:inline">
+                  <input type="hidden" name="id" value="<%= v.id %>">
+                  <input type="hidden" name="action" value="reject">
+                  <div class="input-group input-group-sm">
+                    <input type="text" name="note" class="form-control form-control-sm" placeholder="سبب الرفض" style="max-width:200px">
+                    <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-x-lg"></i> رفض</button>
+                  </div>
+                </form>
+              </div>
+            <% } else if (v.admin_note) { %>
+              <div class="small text-muted mt-1">📝 ملاحظة: <%= v.admin_note %></div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</div>
