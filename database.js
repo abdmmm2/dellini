@@ -281,6 +281,23 @@ async function initializeDatabase() {
   // Mark all verified consultants as online (checked every startup)
   try { db._rawRun("UPDATE users SET is_online = 1, last_active = datetime('now') WHERE role = 'consultant' AND id IN (SELECT user_id FROM consultants WHERE is_verified = 1)"); } catch(e) {}
 
+  // Auto-create "استشارات حقوقية" category + services if missing
+  try {
+    const existing = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'");
+    if (!existing.length || !existing[0].values.length) {
+      db._rawRun("INSERT INTO categories (name_ar, description, icon, sort_order) VALUES ('استشارات حقوقية', 'استشارات قانونية وحقوقية', 'bi-bank', 6)");
+      const catId = db.exec("SELECT id FROM categories WHERE name_ar = 'استشارات حقوقية'").values[0][0];
+      const services = [
+        ['استشارة قانونية', 0], ['حضور جلسة', 1], ['صياغة عقد', 2],
+        ['مذكرة أو تحرير عقد', 3], ['لائحة اعتراضية', 4], ['توكيل محامي', 5],
+        ['مراجعة دوائر حكومية', 6], ['التوثيق', 7]
+      ];
+      services.forEach(([name, sort]) => {
+        db._rawRun("INSERT INTO services (category_id, name_ar, description, icon, sort_order) VALUES (?, ?, ?, 'bi-file-text', ?)", catId, name, name, sort);
+      });
+    }
+  } catch(e) { console.error('Error creating legal services:', e.message); }
+
   // Bank transfers table
   db._rawRun(`
     CREATE TABLE IF NOT EXISTS bank_transfers (
