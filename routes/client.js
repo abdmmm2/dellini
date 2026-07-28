@@ -390,4 +390,52 @@ router.get('/invoices', (req, res) => {
   res.render('client/invoices', { title: 'الفواتير', transactions });
 });
 
+// 🆔 إعدادات الحساب — إعادة رفع الهوية
+router.get('/settings', (req, res) => {
+  const db = getDB();
+  const identity = db.get('SELECT * FROM identity_verifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 1', req.session.user.id);
+  res.render('client/settings', { title: 'إعدادات الحساب', identity });
+});
+
+router.post('/settings/upload-id', uploadId.single('national_id'), async (req, res) => {
+  if (!req.file) {
+    req.session.error_msg = '❌ يرجى اختيار ملف';
+    return res.redirect('/client/settings');
+  }
+  try {
+    const db = getDB();
+    const imagePath = '/uploads/ids/' + req.file.filename;
+    const fullPath = req.file.path;
+    
+    // Try OCR
+    try {
+      const { scanNationalId } = require('../utils/ocr');
+      const ocrResult = await scanNationalId(fullPath);
+      const fields = ocrResult.fields || {};
+      
+      const existing = db.get('SELECT id FROM identity_verifications WHERE user_id = ?', req.session.user.id);
+      if (existing) {
+        db.runStmt(`UPDATE identity_verifications SET image_path = ?, full_name = ?, id_number = ?, issuer = ?, issue_date = ?, expiry_date = ?, birth_date = ?, age = ?, ocr_raw_text = ?, status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
+          imagePath, fields.full_name, fields.id_number, fields.issuer, fields.issue_date, fields.expiry_date, fields.birth_date, fields.age, ocrResult.rawText?.slice(0,1000), req.session.user.id);
+      } else {
+        db.runStmt(`INSERT INTO identity_verifications (user_id, image_path, full_name, id_number, issuer, issue_date, expiry_date, birth_date, age, ocr_raw_text, status) VALUES (?,?,?,?,?,?,?,?,?,?,'pending')`,
+          req.session.user.id, imagePath, fields.full_name, fields.id_number, fields.issuer, fields.issue_date, fields.expiry_date, fields.birth_date, fields.age, ocrResult.rawText?.slice(0,1000));
+      }
+    } catch(ocrErr) {
+      console.error('OCR error:', ocrErr.message);
+      const existing = db.get('SELECT id FROM identity_verifications WHERE user_id = ?', req.session.user.id);
+      if (existing) {
+        db.runStmt("UPDATE identity_verifications SET image_path = ?, status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE user_id = ?", imagePath, req.session.user.id);
+      } else {
+        db.runStmt("INSERT INTO identity_verifications (user_id, image_path, status) VALUES (?, ?, 'pending')", req.session.user.id, imagePath);
+      }
+    }
+    req.session.success_msg = '✅ تم رفع الهوية، سيقوم الإدارة بمراجعتها';
+  } catch(err) {
+    console.error('Upload error:', err);
+    req.session.error_msg = '❌ حدث خطأ';
+  }
+  res.redirect('/client/settings');
+});
+
 module.exports = router;
