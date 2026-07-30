@@ -1,54 +1,37 @@
 // OCR utility for Saudi National ID card
 const Tesseract = require('tesseract.js');
-const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
 
-/**
- * Pre-process image for optimal OCR
- */
 async function preprocessImage(inputPath, outputPath) {
   try {
     await sharp(inputPath)
-      .resize({ width: 1500, withoutEnlargement: false })
+      .resize({ width: 2000, withoutEnlargement: false })
       .grayscale()
       .normalise()
       .sharpen()
+      .linear(1.5, -30)
       .jpeg({ quality: 95 })
       .toFile(outputPath);
     return outputPath;
-  } catch (e) {
-    console.error('Preprocess error:', e.message);
-    return inputPath;
-  }
+  } catch (e) { return inputPath; }
 }
 
-/**
- * Extract text from an ID card image using Tesseract.js
- */
 async function scanNationalId(imagePath) {
   let worker = null;
   try {
     console.log('🔍 OCR: processing', imagePath);
     
-    // Preprocess
     const procPath = imagePath.replace(/(\.\w+)$/, '-proc$1');
-    const imgPath = await preprocessImage(imagePath, procPath);
+    await preprocessImage(imagePath, procPath);
     
-    // Create worker with Arabic
-    console.log('🔍 Creating Tesseract worker...');
-    worker = await Tesseract.createWorker('ara', 1, {
-      logger: () => {}
-    });
+    worker = await Tesseract.createWorker('ara+eng', 1, { logger: () => {} });
     
-    console.log('🔍 Recognizing...');
-    const { data } = await worker.recognize(imgPath);
-    
-    // Cleanup processed file
+    const { data } = await worker.recognize(procPath);
     try { fs.unlinkSync(procPath); } catch(e) {}
     
     const rawText = data.text || '';
-    console.log('📝 OCR text (first 500):', rawText.slice(0, 500));
+    console.log('📝 OCR text:', rawText.slice(0, 500));
     
     const fields = extractFields(rawText);
     console.log('📋 Fields:', JSON.stringify(fields));
@@ -62,53 +45,55 @@ async function scanNationalId(imagePath) {
   }
 }
 
-/**
- * Extract fields from OCR text - Saudi National ID
- */
 function extractFields(text) {
   const fields = {};
-  const cleaned = text.replace(/[\s\n\r]+/g, ' ').replace(/[ـ\-_]+/g, '').trim();
+  let cleaned = text.replace(/[\n\r]+/g, ' ').replace(/[ـ\-_]+/g, '').trim();
+  cleaned = cleaned.replace(/\s+/g, ' ');
   
-  // رقم الهوية
-  const idMatch = cleaned.match(/رقم\s*(?:الهوية|المدني|الوطني)\s*[:\-]?\s*(\d{10,})/i);
-  if (idMatch) fields.id_number = idMatch[1].slice(0,10);
+  // رقم الهوية - 10 digits starting with 1
+  const idMatch = cleaned.match(/\b(1\d{9})\b/);
+  if (idMatch) fields.id_number = idMatch[1];
   
-  // الاسم
-  const nameMatch = cleaned.match(/(?:الاسم|اسم)\s*[:\-]?\s*([^\d\r\n]{4,60}?)(?:\s{2,}|\s*\d|\s*رقم)/i);
+  // الاسم - look for Arabic text patterns
+  const nameMatch = cleaned.match(/(?:الاسم|اسم)\s*[:\-]?\s*([\u0600-\u06FF\s]{4,60}?)(?:\s+\d|\s*رقم|$)/i);
   if (nameMatch) { const n = nameMatch[1].trim(); if (n.length > 3) fields.full_name = n; }
   
   // المصدر
-  const issueM = cleaned.match(/مصدرها\s*[:\-]?\s*([^\d\r\n]{3,50}?)(?:\s{2,}|\d|$)/i);
-  if (issueM) fields.issuer = issueM[1].trim();
+  const issuerMatch = cleaned.match(/(?:مصدرها|جهة|وزارة)\s*[:\-]?\s*([\u0600-\u06FF\s]{3,50}?)(?:\s+\d|$)/i);
+  if (issuerMatch) fields.issuer = issuerMatch[1].trim();
   
-  // Dates
+  // All dates
   const dates = [];
   let m;
-  const dr = /(\d{1,4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,4})/g;
+  const dr = /(\d{1,4})[\/\-\.\s](\d{1,2})[\/\-\.\s](\d{1,4})/g;
   while ((m = dr.exec(cleaned)) !== null) {
-    const ctx = cleaned.slice(Math.max(0, m.index - 40), m.index + 5);
-    dates.push({ d1: m[1], d2: m[2], d3: m[3], ctx, pos: m.index });
+    dates.push({ idx: m.index, d: `${m[1]}/${m[2]}/${m[3]}`, raw: m[0] });
   }
   
+  // Classify dates by context
   dates.forEach(d => {
-    if (/انتهاء|تنتهي|صالحة|expiry/i.test(d.ctx)) {
-      fields.expiry_date = d.d3.length === 4 ? `${d.d3}/${d.d2.padStart(2,'0')}/${d.d1.padStart(2,'0')}` : d.raw;
-    } else if (/الميلاد|ميلاد|birth/i.test(d.ctx)) {
-      fields.birth_date = d.d3.length === 4 ? `${d.d3}/${d.d2.padStart(2,'0')}/${d.d1.padStart(2,'0')}` : d.raw;
-    } else if (/إصدار|اصدار|صدر|issue/i.test(d.ctx)) {
-      fields.issue_date = d.d3.length === 4 ? `${d.d3}/${d.d2.padStart(2,'0')}/${d.d1.padStart(2,'0')}` : d.raw;
+    const ctx = cleaned.slice(Math.max(0, d.idx - 30), d.idx + 30);
+    if (/انتهاء|تنتهي|expiry|valid/i.test(ctx)) {
+      fields.expiry_date = d.d;
+    } else if (/الميلاد|ميلاد|ازدياد|birth/i.test(ctx)) {
+      fields.birth_date = d.d;
+    } else if (/إصدار|اصدار|صدر|issue/i.test(ctx)) {
+      fields.issue_date = d.d;
     }
   });
   
-  // Fallback: assign dates
-  if (dates.length >= 2 && !fields.issue_date && !fields.expiry_date) {
-    const sorted = dates.sort((a,b) => a.pos - b.pos);
-    const first = sorted[0], last = sorted[sorted.length-1];
-    fields.issue_date = first.d3.length === 4 ? `${first.d3}/${first.d2}/${first.d1}` : first.raw;
-    fields.expiry_date = last.d3.length === 4 ? `${last.d3}/${last.d2}/${last.d1}` : last.raw;
+  // Fallback: assign dates by position
+  if (dates.length >= 2) {
+    if (!fields.issue_date) fields.issue_date = dates[0].d;
+    if (!fields.expiry_date) fields.expiry_date = dates[dates.length - 1].d;
+    if (!fields.birth_date && dates.length >= 3) {
+      // Middle date is usually birth date
+      const birthDates = dates.filter(d => d.d !== fields.issue_date && d.d !== fields.expiry_date);
+      if (birthDates.length > 0) fields.birth_date = birthDates[0].d;
+    }
   }
   
-  // العمر
+  // Age from birth date
   if (fields.birth_date) {
     const parts = fields.birth_date.split('/');
     let year = parseInt(parts[0]);
