@@ -218,7 +218,7 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, req.session.user.id, consultant_id, category_id, title || null, question,
     req.file ? '/uploads/' + req.file.filename : null,
-    is_urgent ? 1 : 0,
+    is_urgent ? 1 : 0, consultationStatus,
     amount, platformFee, consultantEarnings, nickname, hide_identity ? 1 : 0,
     isVoice ? 'voice' : 'text', durationMinutes, isVoice ? basePrice : 0);
 
