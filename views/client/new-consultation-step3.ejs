@@ -74,6 +74,22 @@
               </div>
             </div>
 
+            <% if (hasFreeTrial) { %>
+            <div class="mb-3">
+              <div class="card border-success" style="border-radius:12px;background:#f0fdf4">
+                <div class="card-body py-3">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="free_trial" value="1" id="freeTrial" checked>
+                    <label class="form-check-label" for="freeTrial">
+                      <strong style="color:#198754">🎉 أول استشارة مجانية!</strong>
+                      <br><small class="text-muted">هذه أول استشارة لك — مجانًا بالكامل. تستخدم مرة واحدة فقط.</small>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <% } %>
+
             <div class="mb-3">
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" name="is_urgent" value="1" id="isUrgent" onchange="toggleUrgent()">

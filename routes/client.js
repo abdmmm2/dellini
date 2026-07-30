@@ -125,9 +125,14 @@ router.get('/new/step3/:categoryId/:consultantId', (req, res) => {
   const rows = db.all('SELECT * FROM payment_settings');
   rows.forEach(r => { settings[r.key] = r.value; });
 
+  // Check if user has free trial available
+  const paidCount = db.get("SELECT COUNT(*) as c FROM consultations WHERE client_id = ? AND status != 'draft' AND payment_status = 'paid'", req.session.user.id);
+  const hasFreeTrial = paidCount.c === 0;
+
   res.render('client/new-consultation-step3', {
     title: 'كتابة الاستشارة', consultant, categoryId, consultantId,
-    settings, voiceEnabled: settings.voice_calls_enabled !== '0'
+    settings, voiceEnabled: settings.voice_calls_enabled !== '0',
+    hasFreeTrial
   });
 });
 
@@ -135,7 +140,7 @@ router.get('/new/step3/:categoryId/:consultantId', (req, res) => {
 router.post('/new/submit', upload.single('attachment'), (req, res) => {
   const db = getDB();
   const { category_id, consultant_id, title, question, hide_identity, is_urgent,
-    consultation_type, duration, voice_price_per_min } = req.body;
+    consultation_type, duration, voice_price_per_min, free_trial } = req.body;
 
   if (!question || question.trim().length < 10) {
     req.session.error_msg = 'يجب كتابة سؤال الاستشارة بوضوح (10 أحرف على الأقل)';
@@ -196,6 +201,14 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
   const platformFee = amount * 0.25;
   const consultantEarnings = amount - platformFee;
 
+  // 🆓 Free trial handling
+  const isFreeTrial = free_trial === '1' && !isVoice;
+  if (isFreeTrial) {
+    amount = 0;
+    platformFee = 0;
+    consultantEarnings = 0;
+  }
+
   // Generate nickname
   const nickname = 'مستخدم_' + Math.random().toString(36).substring(2, 8);
 
@@ -209,8 +222,25 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
     amount, platformFee, consultantEarnings, nickname, hide_identity ? 1 : 0,
     isVoice ? 'voice' : 'text', durationMinutes, isVoice ? basePrice : 0);
 
-  req.session.success_msg = 'تم إنشاء الاستشارة، يرجى إتمام الدفع';
-  res.redirect(`/client/pay/${result.lastInsertRowid}`);
+  req.session.success_msg = isFreeTrial ? '🎉 أول استشارة مجانية! تم إرسال استشارتك للمستشار' : 'تم إنشاء الاستشارة، يرجى إتمام الدفع';
+
+  if (isFreeTrial) {
+    // Set as paid and assigned directly
+    const consultId = result.lastInsertRowid;
+    db.runStmt("UPDATE consultations SET payment_status = 'paid', status = 'assigned', updated_at = CURRENT_TIMESTAMP WHERE id = ?", consultId);
+    // Notify consultant
+    if (consultant_id) {
+      const conUser = db.get('SELECT user_id FROM consultants WHERE id = ?', consultant_id);
+      if (conUser) {
+        db.runStmt(`INSERT INTO notifications (user_id, title, message, type, related_id, related_type)
+          VALUES (?, ?, ?, 'success', ?, 'consultation')`,
+          conUser.user_id, '🎉 استشارة مجانية', 'استشارة مجانية جديدة بانتظار ردك', consultId);
+      }
+    }
+    res.redirect(`/client/consultation/${consultId}`);
+  } else {
+    res.redirect(`/client/pay/${result.lastInsertRowid}`);
+  }
 });
 
 // Payment page
