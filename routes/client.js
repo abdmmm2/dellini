@@ -212,10 +212,9 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
 
   const consultationStatus = isFree ? 'assigned' : 'pending_payment';
 
-  console.log('Creating consultation:', { userId: req.session.user.id, consultant_id, category_id, status: consultationStatus, amount, isFree });
-
+  let result;
   try {
-    const result = db.runStmt(`
+    result = db.runStmt(`
     INSERT INTO consultations (client_id, consultant_id, category_id, title, question, attachment_path, is_urgent,
       status, amount, platform_fee, consultant_earnings, client_nickname, hide_identity, type, duration_minutes, voice_call_price)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
