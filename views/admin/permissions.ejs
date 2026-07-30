@@ -1,67 +1,127 @@
 <div class="container py-4">
   <h4 class="fw-bold mb-3"><i class="bi bi-shield-lock"></i> إدارة الصلاحيات</h4>
-  <p class="text-muted small mb-3">حدد صلاحيات كل دور. صلاحيات الأدمن كاملة ولا يمكن تغييرها.</p>
+  <p class="text-muted small mb-3">اختر الدور من فوق وحدد صلاحياته</p>
 
   <form method="POST" action="/admin/permissions/save">
-    <div class="table-responsive">
-      <table class="table table-bordered">
-        <thead class="table-dark">
-          <tr>
-            <th style="min-width:140px">الصلاحية</th>
-            <th class="text-center">👑 مدير</th>
-            <th class="text-center">🛡️ مشرف</th>
-            <th class="text-center">💼 مستشار</th>
-            <th class="text-center">👤 عميل</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% 
-            const permsList = [
-              { key: 'manage_users', label: 'إدارة المستخدمين', icon: 'bi-people' },
-              { key: 'manage_consultants', label: 'إدارة المستشارين', icon: 'bi-person-badge' },
-              { key: 'manage_categories', label: 'إدارة الأقسام', icon: 'bi-bookmark' },
-              { key: 'manage_services', label: 'إدارة الخدمات', icon: 'bi-bookmark-check' },
-              { key: 'manage_consultations', label: 'إدارة الاستشارات', icon: 'bi-chat-dots' },
-              { key: 'manage_ads', label: 'إدارة الإعلانات', icon: 'bi-megaphone' },
-              { key: 'manage_withdrawals', label: 'طلبات السحب', icon: 'bi-cash-stack' },
-              { key: 'manage_verification', label: 'توثيق المستشارين', icon: 'bi-patch-check' },
-              { key: 'manage_identity', label: 'التحقق من الهوية', icon: 'bi-card-text' },
-              { key: 'manage_payment', label: 'إعدادات الدفع', icon: 'bi-credit-card' },
-              { key: 'manage_backup', label: 'النسخ الاحتياطي', icon: 'bi-shield-check' },
-              { key: 'manage_permissions', label: 'إدارة الصلاحيات', icon: 'bi-shield-lock' },
-              { key: 'view_reports', label: 'التقارير', icon: 'bi-bar-chart' },
-              { key: 'view_whatsapp', label: 'واتساب', icon: 'bi-whatsapp' },
-            ];
-            const roles = ['admin', 'supervisor', 'consultant', 'client'];
-            const perms = typeof permissions !== 'undefined' ? permissions : {};
-            permsList.forEach(p => {
-          %>
-            <tr>
-              <td><i class="bi <%= p.icon %>"></i> <%= p.label %></td>
-              <% roles.forEach(role => { %>
-                <td class="text-center">
-                  <% if (role === 'admin') { %>
-                    <span class="text-success fs-5">✅</span>
-                    <input type="hidden" name="perm[admin][<%= p.key %>]" value="1">
-                  <% } else { %>
-                    <div class="form-check form-switch d-inline-block">
-                      <input class="form-check-input" type="checkbox" 
-                        name="perm[<%= role %>][<%= p.key %>]" value="1" 
-                        id="perm_<%= role %>_<%= p.key %>"
-                        <%= (perms[role] && perms[role][p.key]) ? 'checked' : '' %>>
+    <!-- Role Tabs -->
+    <ul class="nav nav-tabs mb-3" id="roleTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin" type="button" role="tab">
+          👑 <strong>مدير</strong>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="supervisor-tab" data-bs-toggle="tab" data-bs-target="#supervisor" type="button" role="tab">
+          🛡️ <strong>مشرف</strong>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="consultant-tab" data-bs-toggle="tab" data-bs-target="#consultant" type="button" role="tab">
+          💼 <strong>مستشار</strong>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="client-tab" data-bs-toggle="tab" data-bs-target="#client" type="button" role="tab">
+          👤 <strong>عميل</strong>
+        </button>
+      </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <% 
+        const permsList = [
+          { key: 'manage_users', label: 'إدارة المستخدمين', icon: 'bi-people', desc: 'إضافة، تعديل، حذف المستخدمين' },
+          { key: 'manage_consultants', label: 'إدارة المستشارين', icon: 'bi-person-badge', desc: 'توثيق وإدارة المستشارين' },
+          { key: 'manage_categories', label: 'إدارة الأقسام', icon: 'bi-bookmark', desc: 'إضافة وتعديل الأقسام' },
+          { key: 'manage_services', label: 'إدارة الخدمات', icon: 'bi-bookmark-check', desc: 'إضافة وتعديل الخدمات' },
+          { key: 'manage_consultations', label: 'إدارة الاستشارات', icon: 'bi-chat-dots', desc: 'مشاهدة وتعديل الاستشارات' },
+          { key: 'manage_ads', label: 'إدارة الإعلانات', icon: 'bi-megaphone', desc: 'إضافة وتعديل الإعلانات' },
+          { key: 'manage_withdrawals', label: 'طلبات السحب', icon: 'bi-cash-stack', desc: 'إدارة طلبات سحب المستشارين' },
+          { key: 'manage_verification', label: 'توثيق المستشارين', icon: 'bi-patch-check', desc: 'الموافقة على توثيق المستشارين' },
+          { key: 'manage_identity', label: 'التحقق من الهوية', icon: 'bi-card-text', desc: 'مراجعة وتوثيق الهويات' },
+          { key: 'manage_payment', label: 'إعدادات الدفع', icon: 'bi-credit-card', desc: 'إعدادات Stripe و STC Pay' },
+          { key: 'manage_backup', label: 'النسخ الاحتياطي', icon: 'bi-shield-check', desc: 'إنشاء واستعادة النسخ' },
+          { key: 'manage_permissions', label: 'إدارة الصلاحيات', icon: 'bi-shield-lock', desc: 'تعديل صلاحيات الأدوار' },
+          { key: 'view_reports', label: 'التقارير', icon: 'bi-bar-chart', desc: 'مشاهدة التقارير المالية' },
+          { key: 'view_whatsapp', label: 'واتساب', icon: 'bi-whatsapp', desc: 'إرسال واتساب جماعي' },
+        ];
+        const roles = [
+          { id: 'admin', label: 'مدير', icon: '👑', fixed: true },
+          { id: 'supervisor', label: 'مشرف', icon: '🛡️', fixed: false },
+          { id: 'consultant', label: 'مستشار', icon: '💼', fixed: false },
+          { id: 'client', label: 'عميل', icon: '👤', fixed: false },
+        ];
+        const perms = typeof permissions !== 'undefined' ? permissions : {};
+      %>
+
+      <% roles.forEach(role => { %>
+        <div class="tab-pane fade <%= role.id === 'admin' ? 'show active' : '' %>" id="<%= role.id %>" role="tabpanel">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+              <h5 class="mb-0 fw-bold"><%= role.icon %> <%= role.label %></h5>
+              <% if (role.fixed) { %>
+                <span class="badge bg-success">جميع الصلاحيات مفعلة ✅</span>
+              <% } else { %>
+                <div class="form-check form-switch mb-0">
+                  <input class="form-check-input" type="checkbox" id="toggleAll_<%= role.id %>"
+                    onclick="toggleAll('<%= role.id %>', this.checked)">
+                  <label class="form-check-label small" for="toggleAll_<%= role.id %>">تحديد الكل</label>
+                </div>
+              <% } %>
+            </div>
+            <div class="card-body">
+              <% if (role.fixed) { %>
+                <p class="text-muted small">الأدمن لديه جميع الصلاحيات ولا يمكن تغييرها.</p>
+                <div class="row g-2">
+                  <% permsList.forEach(p => { %>
+                    <div class="col-md-6">
+                      <div class="d-flex align-items-center gap-2 p-2 bg-light rounded">
+                        <span class="text-success">✅</span>
+                        <div>
+                          <strong class="small"><%= p.label %></strong>
+                          <br><small class="text-muted"><%= p.desc %></small>
+                        </div>
+                      </div>
                     </div>
-                  <% } %>
-                </td>
-              <% }); %>
-            </tr>
-          <% }); %>
-        </tbody>
-      </table>
+                  <% }); %>
+                </div>
+              <% } else { %>
+                <div class="row g-2">
+                  <% permsList.forEach(p => { %>
+                    <div class="col-md-6">
+                      <div class="form-check form-switch p-2 border rounded">
+                        <input class="form-check-input float-end" type="checkbox" 
+                          name="perm[<%= role.id %>][<%= p.key %>]" value="1" 
+                          id="perm_<%= role.id %>_<%= p.key %>"
+                          <%= (perms[role.id] && perms[role.id][p.key]) ? 'checked' : '' %>>
+                        <label class="form-check-label" for="perm_<%= role.id %>_<%= p.key %>">
+                          <strong class="small"><%= p.label %></strong>
+                          <br><small class="text-muted"><%= p.desc %></small>
+                        </label>
+                      </div>
+                    </div>
+                  <% }); %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }); %>
     </div>
-    <div class="text-center mt-3">
+
+    <div class="text-center mt-4">
       <button type="submit" class="btn btn-primary btn-lg px-5">
         <i class="bi bi-save"></i> حفظ الصلاحيات
       </button>
     </div>
   </form>
 </div>
+
+<script>
+function toggleAll(roleId, checked) {
+  document.querySelectorAll('#\\' + roleId + ' input[type="checkbox"]').forEach(cb => {
+    cb.checked = checked;
+  });
+}
+</script>
