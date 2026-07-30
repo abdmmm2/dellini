@@ -196,21 +196,46 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
   const platformFee = amount * 0.25;
   const consultantEarnings = amount - platformFee;
 
+  // 🆓 First consultation is FREE (text only, not voice)
+  const paidCount = db.get("SELECT COUNT(*) as c FROM consultations WHERE client_id = ? AND status != 'draft' AND payment_status = 'paid'", req.session.user.id);
+  const isFirst = paidCount.c === 0;
+  const isFree = isFirst && !isVoice;
+  
+  if (isFree) {
+    amount = 0;
+    platformFee = 0;
+    consultantEarnings = 0;
+  }
+
   // Generate nickname
   const nickname = 'مستخدم_' + Math.random().toString(36).substring(2, 8);
+
+  const consultationStatus = isFree ? 'assigned' : 'pending_payment';
 
   const result = db.runStmt(`
     INSERT INTO consultations (client_id, consultant_id, category_id, title, question, attachment_path, is_urgent,
       status, amount, platform_fee, consultant_earnings, client_nickname, hide_identity, type, duration_minutes, voice_call_price)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_payment', ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, req.session.user.id, consultant_id, category_id, title || null, question,
     req.file ? '/uploads/' + req.file.filename : null,
     is_urgent ? 1 : 0,
     amount, platformFee, consultantEarnings, nickname, hide_identity ? 1 : 0,
     isVoice ? 'voice' : 'text', durationMinutes, isVoice ? basePrice : 0);
 
-  req.session.success_msg = 'تم إنشاء الاستشارة، يرجى إتمام الدفع';
-  res.redirect(`/client/pay/${result.lastInsertRowid}`);
+  // 🆓 If free, assign directly and notify consultant
+  if (isFree && consultant_id) {
+    db.runStmt("UPDATE consultations SET payment_status = 'paid', updated_at = CURRENT_TIMESTAMP WHERE id = ?", result.lastInsertRowid);
+    // Notify consultant
+    const conUser = db.get('SELECT user_id FROM consultants WHERE id = ?', consultant_id);
+    if (conUser) {
+      db.runStmt(`INSERT INTO notifications (user_id, title, message, type, related_id, related_type)
+        VALUES (?, ?, ?, 'success', ?, 'consultation')`,
+        conUser.user_id, '🎉 استشارة مجانية جديدة', 'لديك استشارة مجانية جديدة بانتظار ردك', result.lastInsertRowid);
+    }
+  }
+
+  req.session.success_msg = isFree ? '🎉 أول استشارة مجانية! تم إرسال استشارتك للمستشار' : 'تم إنشاء الاستشارة، يرجى إتمام الدفع';
+  res.redirect(isFree ? `/client/consultation/${result.lastInsertRowid}` : `/client/pay/${result.lastInsertRowid}`);
 });
 
 // Payment page
