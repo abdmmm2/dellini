@@ -136,16 +136,12 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
             fields.age || null,
             ocrResult.rawText.slice(0, 1000) || null,
             imagePath,
-            hasData ? 'pending' : 'rejected'
+            hasData ? 'pending' : 'pending'  // Always pending — admin reviews either way
           );
           
-          // If OCR couldn't extract data, reject registration
+          // If OCR couldn't extract data, save anyway for admin review
           if (!hasData) {
-            console.log('⚠️ OCR failed for user', userId);
-            req.session.error_msg = 'لم نتمكن من قراءة بيانات الهوية. يرجى تصوير الهوية بوضوح والتأكد من الإضاءة';
-            // Clean up: delete the user we just created
-            db.runStmt('DELETE FROM users WHERE id = ?', userId);
-            return res.redirect('/register');
+            console.log('⚠️ OCR could not extract data from ID for user', userId);
           }
         } catch(ocrErr) {
           console.error('OCR error:', ocrErr.message);
