@@ -201,8 +201,9 @@ function printIdentity(id, userName, email, phone, idNumber, fullName, issuer, i
     + '<span>تم إنشاء هذا التقرير في ' + new Date().toLocaleString('ar-SA') + '</span>'
     + '<span>دلني للاستشارات © ' + new Date().getFullYear() + '</span>'
     + '</div>'
-    + '<div class="no-print" style="text-align:center;margin-top:25px">'
+    + '<div class="no-print" style="text-align:center;margin-top:25px;display:flex;gap:12px;justify-content:center">'
     + '<button onclick="window.print()" style="padding:12px 40px;background:#1a2332;color:#c8a45c;border:none;border-radius:8px;font-size:16px;cursor:pointer;font-weight:700">🖨️ طباعة A4</button>'
+    + '<button onclick="window.close()" style="padding:12px 40px;background:#6c757d;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;font-weight:700">✕ إغلاق</button>'
     + '</div>'
     + '</body></html>';
   
