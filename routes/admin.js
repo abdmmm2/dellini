@@ -1433,7 +1433,6 @@ router.post('/backup/restore-latest', requireAdmin, (req, res) => {
   }
   res.redirect('/admin/backup');
 });
-});
 
 // تحميل نسخة احتياطية
 router.get('/backup/download/:name', requireAdmin, (req, res) => {
