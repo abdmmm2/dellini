@@ -120,10 +120,12 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
           const ocrResult = await scanNationalId(fullPath);
           
           const fields = ocrResult.fields || {};
+          const hasData = fields.id_number || fields.full_name;
+          
           db.runStmt(`
             INSERT INTO identity_verifications 
               (user_id, full_name, id_number, issuer, issue_date, expiry_date, birth_date, age, ocr_raw_text, image_path, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, userId,
             fields.full_name || null,
             fields.id_number || null,
@@ -133,8 +135,18 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
             fields.birth_date || null,
             fields.age || null,
             ocrResult.rawText.slice(0, 1000) || null,
-            imagePath
+            imagePath,
+            hasData ? 'pending' : 'rejected'
           );
+          
+          // If OCR couldn't extract data, reject registration
+          if (!hasData) {
+            console.log('⚠️ OCR failed for user', userId);
+            req.session.error_msg = 'لم نتمكن من قراءة بيانات الهوية. يرجى تصوير الهوية بوضوح والتأكد من الإضاءة';
+            // Clean up: delete the user we just created
+            db.runStmt('DELETE FROM users WHERE id = ?', userId);
+            return res.redirect('/register');
+          }
         } catch(ocrErr) {
           console.error('OCR error:', ocrErr.message);
           db.runStmt(`
