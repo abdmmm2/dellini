@@ -225,21 +225,11 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
   req.session.success_msg = isFreeTrial ? '🎉 أول استشارة مجانية! تم إرسال استشارتك للمستشار' : 'تم إنشاء الاستشارة، يرجى إتمام الدفع';
 
   if (isFreeTrial) {
-    // Set as paid and assigned directly
     const consultId = result.lastInsertRowid;
-    db.runStmt("UPDATE consultations SET payment_status = 'paid', status = 'assigned', updated_at = CURRENT_TIMESTAMP WHERE id = ?", consultId);
-    // Notify consultant
-    if (consultant_id) {
-      const conUser = db.get('SELECT user_id FROM consultants WHERE id = ?', consultant_id);
-      if (conUser) {
-        db.runStmt(`INSERT INTO notifications (user_id, title, message, type, related_id, related_type)
-          VALUES (?, ?, ?, 'success', ?, 'consultation')`,
-          conUser.user_id, '🎉 استشارة مجانية', 'استشارة مجانية جديدة بانتظار ردك', consultId);
-      }
-    }
-    res.redirect(`/client/consultation/${consultId}`);
+    db.runStmt("UPDATE consultations SET payment_status = 'paid', status = 'assigned' WHERE id = ?", consultId);
+    res.redirect('/client/consultation/' + consultId);
   } else {
-    res.redirect(`/client/pay/${result.lastInsertRowid}`);
+    res.redirect('/client/pay/' + result.lastInsertRowid);
   }
 });
 
