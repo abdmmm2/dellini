@@ -138,6 +138,7 @@ router.get('/new/step3/:categoryId/:consultantId', (req, res) => {
 
 // Submit consultation (creates draft)
 router.post('/new/submit', upload.single('attachment'), (req, res) => {
+  try {
   const db = getDB();
   const { category_id, consultant_id, title, question, hide_identity, is_urgent,
     consultation_type, duration, voice_price_per_min, free_trial } = req.body;
@@ -230,6 +231,11 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
     res.redirect('/client/consultation/' + consultId);
   } else {
     res.redirect('/client/pay/' + result.lastInsertRowid);
+  }
+  } catch(err) {
+    console.error('❌ Consultation submit error:', err.message, err.stack);
+    req.session.error_msg = 'حدث خطأ: ' + err.message;
+    res.redirect('/client/new/step3/' + (req.body?.category_id || '') + '/' + (req.body?.consultant_id || ''));
   }
 });
 
