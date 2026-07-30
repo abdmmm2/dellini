@@ -405,6 +405,57 @@ async function initializeDatabase() {
     )
   `);
 
+  // 🔐 Permissions table
+  db._rawRun(`
+    CREATE TABLE IF NOT EXISTS permissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      role TEXT NOT NULL UNIQUE CHECK(role IN ('admin','supervisor','consultant','client')),
+      permissions TEXT DEFAULT '{}',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  
+  // Insert default permissions if not exist
+  const defaultPerms = {
+    'admin': {
+      'manage_users': true, 'manage_consultants': true, 'manage_categories': true,
+      'manage_services': true, 'manage_consultations': true, 'manage_ads': true,
+      'manage_withdrawals': true, 'manage_verification': true, 'manage_backup': true,
+      'manage_identity': true, 'manage_payment': true, 'manage_permissions': true,
+      'view_reports': true, 'view_whatsapp': true,
+    },
+    'supervisor': {
+      'manage_users': false, 'manage_consultants': true, 'manage_categories': false,
+      'manage_services': false, 'manage_consultations': true, 'manage_ads': false,
+      'manage_withdrawals': true, 'manage_verification': true, 'manage_backup': false,
+      'manage_identity': true, 'manage_payment': true, 'manage_permissions': false,
+      'view_reports': true, 'view_whatsapp': true,
+    },
+    'consultant': {
+      'manage_users': false, 'manage_consultants': false, 'manage_categories': false,
+      'manage_services': false, 'manage_consultations': false, 'manage_ads': false,
+      'manage_withdrawals': false, 'manage_verification': false, 'manage_backup': false,
+      'manage_identity': false, 'manage_payment': false, 'manage_permissions': false,
+      'view_reports': false, 'view_whatsapp': false,
+    },
+    'client': {
+      'manage_users': false, 'manage_consultants': false, 'manage_categories': false,
+      'manage_services': false, 'manage_consultations': false, 'manage_ads': false,
+      'manage_withdrawals': false, 'manage_verification': false, 'manage_backup': false,
+      'manage_identity': false, 'manage_payment': false, 'manage_permissions': false,
+      'view_reports': false, 'view_whatsapp': false,
+    },
+  };
+  
+  try {
+    for (const [role, perms] of Object.entries(defaultPerms)) {
+      const existing = db.exec("SELECT id FROM permissions WHERE role = '" + role + "'");
+      if (!existing.length || !existing[0].values.length) {
+        db._rawRun("INSERT INTO permissions (role, permissions) VALUES ('" + role + "', '" + JSON.stringify(perms).replace(/'/g, "''") + "')");
+      }
+    }
+  } catch(e) {}
+
   // Identity verifications table (National ID OCR data)
   db._rawRun(`
     CREATE TABLE IF NOT EXISTS identity_verifications (

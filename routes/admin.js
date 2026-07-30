@@ -1497,6 +1497,32 @@ router.post('/backup/upload-restore', requireAdmin, upload.single('dbfile'), (re
 });
 
 // =====================================================================
+// 🔐 إدارة الصلاحيات
+// =====================================================================
+
+router.get('/permissions', requireAdmin, (req, res) => {
+  const db = getDB();
+  const rows = db.all('SELECT * FROM permissions');
+  const permissions = {};
+  rows.forEach(r => {
+    try { permissions[r.role] = JSON.parse(r.permissions); } catch(e) { permissions[r.role] = {}; }
+  });
+  res.render('admin/permissions', { title: 'إدارة الصلاحيات', permissions });
+});
+
+router.post('/permissions/save', requireAdmin, (req, res) => {
+  const db = getDB();
+  const perm = req.body.perm || {};
+  for (const [role, perms] of Object.entries(perm)) {
+    if (role === 'admin') continue; // Admin always full access
+    db.runStmt("UPDATE permissions SET permissions = ?, updated_at = CURRENT_TIMESTAMP WHERE role = ?",
+      JSON.stringify(perms), role);
+  }
+  req.session.success_msg = '✅ تم حفظ الصلاحيات';
+  res.redirect('/admin/permissions');
+});
+
+// =====================================================================
 // 🆔 التحقق من الهويات (Identity Verification)
 // =====================================================================
 

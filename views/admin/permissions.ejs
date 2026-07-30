@@ -1,0 +1,67 @@
+<div class="container py-4">
+  <h4 class="fw-bold mb-3"><i class="bi bi-shield-lock"></i> إدارة الصلاحيات</h4>
+  <p class="text-muted small mb-3">حدد صلاحيات كل دور. صلاحيات الأدمن كاملة ولا يمكن تغييرها.</p>
+
+  <form method="POST" action="/admin/permissions/save">
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th style="min-width:140px">الصلاحية</th>
+            <th class="text-center">👑 مدير</th>
+            <th class="text-center">🛡️ مشرف</th>
+            <th class="text-center">💼 مستشار</th>
+            <th class="text-center">👤 عميل</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% 
+            const permsList = [
+              { key: 'manage_users', label: 'إدارة المستخدمين', icon: 'bi-people' },
+              { key: 'manage_consultants', label: 'إدارة المستشارين', icon: 'bi-person-badge' },
+              { key: 'manage_categories', label: 'إدارة الأقسام', icon: 'bi-bookmark' },
+              { key: 'manage_services', label: 'إدارة الخدمات', icon: 'bi-bookmark-check' },
+              { key: 'manage_consultations', label: 'إدارة الاستشارات', icon: 'bi-chat-dots' },
+              { key: 'manage_ads', label: 'إدارة الإعلانات', icon: 'bi-megaphone' },
+              { key: 'manage_withdrawals', label: 'طلبات السحب', icon: 'bi-cash-stack' },
+              { key: 'manage_verification', label: 'توثيق المستشارين', icon: 'bi-patch-check' },
+              { key: 'manage_identity', label: 'التحقق من الهوية', icon: 'bi-card-text' },
+              { key: 'manage_payment', label: 'إعدادات الدفع', icon: 'bi-credit-card' },
+              { key: 'manage_backup', label: 'النسخ الاحتياطي', icon: 'bi-shield-check' },
+              { key: 'manage_permissions', label: 'إدارة الصلاحيات', icon: 'bi-shield-lock' },
+              { key: 'view_reports', label: 'التقارير', icon: 'bi-bar-chart' },
+              { key: 'view_whatsapp', label: 'واتساب', icon: 'bi-whatsapp' },
+            ];
+            const roles = ['admin', 'supervisor', 'consultant', 'client'];
+            const perms = typeof permissions !== 'undefined' ? permissions : {};
+            permsList.forEach(p => {
+          %>
+            <tr>
+              <td><i class="bi <%= p.icon %>"></i> <%= p.label %></td>
+              <% roles.forEach(role => { %>
+                <td class="text-center">
+                  <% if (role === 'admin') { %>
+                    <span class="text-success fs-5">✅</span>
+                    <input type="hidden" name="perm[admin][<%= p.key %>]" value="1">
+                  <% } else { %>
+                    <div class="form-check form-switch d-inline-block">
+                      <input class="form-check-input" type="checkbox" 
+                        name="perm[<%= role %>][<%= p.key %>]" value="1" 
+                        id="perm_<%= role %>_<%= p.key %>"
+                        <%= (perms[role] && perms[role][p.key]) ? 'checked' : '' %>>
+                    </div>
+                  <% } %>
+                </td>
+              <% }); %>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div class="text-center mt-3">
+      <button type="submit" class="btn btn-primary btn-lg px-5">
+        <i class="bi bi-save"></i> حفظ الصلاحيات
+      </button>
+    </div>
+  </form>
+</div>
