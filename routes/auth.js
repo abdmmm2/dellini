@@ -64,6 +64,12 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
     return res.redirect('/register');
   }
 
+  // 🆔 National ID required for clients
+  if (userRole === 'client' && !req.file && !id_photo_data) {
+    req.session.error_msg = 'يرجى تصوير الهوية الوطنية أو رفع صورة لها';
+    return res.redirect('/register');
+  }
+
   const db = getDB();
 
   try {
