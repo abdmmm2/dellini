@@ -223,19 +223,27 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
     isVoice ? 'voice' : 'text', durationMinutes, isVoice ? basePrice : 0);
 
   // 🆓 If free, assign directly and notify consultant
-  if (isFree && consultant_id) {
-    db.runStmt("UPDATE consultations SET payment_status = 'paid', updated_at = CURRENT_TIMESTAMP WHERE id = ?", result.lastInsertRowid);
-    // Notify consultant
-    const conUser = db.get('SELECT user_id FROM consultants WHERE id = ?', consultant_id);
-    if (conUser) {
-      db.runStmt(`INSERT INTO notifications (user_id, title, message, type, related_id, related_type)
-        VALUES (?, ?, ?, 'success', ?, 'consultation')`,
-        conUser.user_id, '🎉 استشارة مجانية جديدة', 'لديك استشارة مجانية جديدة بانتظار ردك', result.lastInsertRowid);
+  if (isFree && consultant_id && result && result.lastInsertRowid) {
+    try {
+      const consultId = result.lastInsertRowid;
+      db.runStmt("UPDATE consultations SET payment_status = 'paid', updated_at = CURRENT_TIMESTAMP WHERE id = ?", consultId);
+      const conUser = db.get('SELECT user_id FROM consultants WHERE id = ?', consultant_id);
+      if (conUser) {
+        db.runStmt(`INSERT INTO notifications (user_id, title, message, type, related_id, related_type)
+          VALUES (?, ?, ?, 'success', ?, 'consultation')`,
+          conUser.user_id, '🎉 استشارة مجانية جديدة', 'لديك استشارة مجانية جديدة بانتظار ردك', consultId);
+      }
+      req.session.success_msg = '🎉 أول استشارة مجانية! تم إرسال استشارتك للمستشار';
+      return res.redirect('/client/consultation/' + consultId);
+    } catch(e) {
+      console.error('Free consultation error:', e.message);
+      req.session.success_msg = 'تم إنشاء الاستشارة';
+      return res.redirect('/client/consultation/' + (result?.lastInsertRowid || 0));
     }
   }
 
-  req.session.success_msg = isFree ? '🎉 أول استشارة مجانية! تم إرسال استشارتك للمستشار' : 'تم إنشاء الاستشارة، يرجى إتمام الدفع';
-  res.redirect(isFree ? `/client/consultation/${result.lastInsertRowid}` : `/client/pay/${result.lastInsertRowid}`);
+  req.session.success_msg = 'تم إنشاء الاستشارة، يرجى إتمام الدفع';
+  res.redirect('/client/pay/' + (result?.lastInsertRowid || 0));
 });
 
 // Payment page
