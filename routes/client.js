@@ -212,7 +212,10 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
 
   const consultationStatus = isFree ? 'assigned' : 'pending_payment';
 
-  const result = db.runStmt(`
+  console.log('Creating consultation:', { userId: req.session.user.id, consultant_id, category_id, status: consultationStatus, amount, isFree });
+
+  try {
+    const result = db.runStmt(`
     INSERT INTO consultations (client_id, consultant_id, category_id, title, question, attachment_path, is_urgent,
       status, amount, platform_fee, consultant_earnings, client_nickname, hide_identity, type, duration_minutes, voice_call_price)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -222,10 +225,23 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
     amount, platformFee, consultantEarnings, nickname, hide_identity ? 1 : 0,
     isVoice ? 'voice' : 'text', durationMinutes, isVoice ? basePrice : 0);
 
+    console.log('Consultation created:', { id: result?.lastInsertRowid, changes: result?.changes });
+  } catch(err) {
+    console.error('INSERT error:', err.message, err.stack);
+    req.session.error_msg = 'حدث خطأ أثناء إنشاء الاستشارة: ' + err.message;
+    return res.redirect('/client/new/step3/' + category_id + '/' + consultant_id);
+  }
+
+  const consultId = result?.lastInsertRowid;
+  
+  if (!consultId) {
+    req.session.error_msg = 'فشل إنشاء الاستشارة';
+    return res.redirect('/client/new/step3/' + category_id + '/' + consultant_id);
+  }
+
   // 🆓 If free, assign directly and notify consultant
-  if (isFree && consultant_id && result && result.lastInsertRowid) {
+  if (isFree && consultant_id) {
     try {
-      const consultId = result.lastInsertRowid;
       db.runStmt("UPDATE consultations SET payment_status = 'paid', updated_at = CURRENT_TIMESTAMP WHERE id = ?", consultId);
       const conUser = db.get('SELECT user_id FROM consultants WHERE id = ?', consultant_id);
       if (conUser) {
