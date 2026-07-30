@@ -199,8 +199,8 @@ router.post('/new/submit', upload.single('attachment'), (req, res) => {
   
   const urgentFee = is_urgent ? basePrice * 0.5 : 0;
   amount = basePrice + urgentFee;
-  const platformFee = amount * 0.25;
-  const consultantEarnings = amount - platformFee;
+  let platformFee = amount * 0.25;
+  let consultantEarnings = amount - platformFee;
 
   // 🆓 Free trial handling
   const isFreeTrial = free_trial === '1' && !isVoice;
