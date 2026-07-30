@@ -1416,6 +1416,25 @@ router.post('/backup/create', requireAdmin, (req, res) => {
   res.redirect('/admin/backup');
 });
 
+// ⚡ استعادة سريعة من آخر نسخة احتياطية
+router.post('/backup/restore-latest', requireAdmin, (req, res) => {
+  try {
+    const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'dellini.db');
+    const latestFile = path.join(backupsPath, 'latest.db');
+    if (fs.existsSync(latestFile)) {
+      fs.copyFileSync(latestFile, dbPath);
+      req.session.success_msg = '✅ تمت استعادة آخر نسخة احتياطية. أعد تشغيل السيرفر (Manual Deploy) عشان التغييرات تطبق.';
+    } else {
+      req.session.error_msg = '❌ لا توجد نسخة احتياطية';
+    }
+  } catch(err) {
+    console.error('Restore error:', err);
+    req.session.error_msg = '❌ فشل الاستعادة';
+  }
+  res.redirect('/admin/backup');
+});
+});
+
 // تحميل نسخة احتياطية
 router.get('/backup/download/:name', requireAdmin, (req, res) => {
   const name = path.basename(req.params.name);

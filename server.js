@@ -221,14 +221,17 @@ async function startServer() {
         fs.copyFileSync(DB_PATH, path.join(backupsPath, backupName));
         console.log(`💾 Auto-backup: ${backupName}`);
         
-        // Keep only last 7 backups
+        // Keep only last 30 backups
         const files = fs.readdirSync(backupsPath)
           .filter(f => f.startsWith('dellini-auto-backup'))
           .sort()
           .reverse();
-        files.slice(7).forEach(f => {
+        files.slice(30).forEach(f => {
           try { fs.unlinkSync(path.join(backupsPath, f)); } catch(e) {}
         });
+        
+        // Also save a latest.db copy for quick restore
+        try { fs.copyFileSync(DB_PATH, path.join(backupsPath, 'latest.db')); } catch(e) {}
       } catch(e) {}
     }
     
