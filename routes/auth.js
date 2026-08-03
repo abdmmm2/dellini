@@ -83,7 +83,7 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
     // منع تسجيل حساب إداري من صفحة التسجيل (للأمان)
 
     const result = db.runStmt(
-      'INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, ?)'
+      'INSERT INTO users (name, email, phone, password, role, is_active) VALUES (?, ?, ?, ?, ?, 0)'
     , name, email, phone || null, hashedPassword, userRole);
 
     // If consultant, create profile
@@ -152,7 +152,7 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
         }
       }
     }
-    // 📧 Send verification code (email) + 📱 WhatsApp alternative
+    // 📧 Send verification code to email (code NOT shown in URL)
     const { sendVerificationCode, generateCode } = require('../utils/email');
     const verifCode = generateCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
@@ -160,15 +160,8 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
       userId, email, verifCode, expiresAt);
     sendVerificationCode(email, name, verifCode).catch(() => {});
     
-    // WhatsApp link for verification
-    const waNumber = formattedPhone || '966500000000';
-    const waMsg = encodeURIComponent('دلني - رمز التفعيل: ' + verifCode);
-    const waLink = 'https://wa.me/' + waNumber + '?text=' + waMsg;
-    
-    req.session.success_msg = 'تم إنشاء الحساب! رمز التفعيل أُرسل لبريدك الإلكتروني';
-    req.session.verifCode = verifCode; // Store temporarily for WhatsApp fallback
-    
-    res.redirect('/verify?email=' + encodeURIComponent(email) + '&wa=' + waLink + '&code=' + verifCode);
+    req.session.success_msg = 'تم إنشاء الحساب! أدخل رمز التفعيل المرسل إلى بريدك الإلكتروني';
+    res.redirect('/verify?email=' + encodeURIComponent(email));
   } catch (err) {
     console.error(err);
     req.session.error_msg = 'حدث خطأ أثناء إنشاء الحساب';
