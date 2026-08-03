@@ -87,7 +87,7 @@ router.post('/contact', (req, res) => {
       + '<hr>'
       + '<p style="white-space:pre-wrap">' + (message || '') + '</p>'
       + '</div>';
-    sendEmail(process.env.CONTACT_EMAIL || 'info@dellini.net', '📩 رسالة جديدة من ' + (name || 'زائر'), content).catch(() => {});
+    sendEmail(process.env.CONTACT_EMAIL || 'support@dellini.net', '📩 رسالة جديدة من ' + (name || 'زائر'), content).catch(() => {});
   } catch(e) {}
   
   req.session.success_msg = 'تم استلام رسالتك شكراً لتواصلك — سنرد عليك في أقرب وقت';
