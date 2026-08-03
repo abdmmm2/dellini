@@ -73,10 +73,17 @@ router.post('/register', uploadId.single('national_id'), async (req, res) => {
   const db = getDB();
 
   try {
-    const existing = db.get('SELECT id FROM users WHERE email = ?', email);
+    const existing = db.get('SELECT id, is_active FROM users WHERE email = ?', email);
     if (existing) {
-      req.session.error_msg = 'البريد الإلكتروني مستخدم بالفعل';
-      return res.redirect('/register');
+      // If account exists but email not verified, delete it so user can re-register
+      const verif = db.get("SELECT id FROM email_verifications WHERE email = ? AND verified = 0 ORDER BY created_at DESC LIMIT 1", email);
+      if (!existing.is_active && verif) {
+        db.runStmt('DELETE FROM email_verifications WHERE email = ?', email);
+        db.runStmt('DELETE FROM users WHERE id = ?', existing.id);
+      } else {
+        req.session.error_msg = 'البريد الإلكتروني مستخدم بالفعل';
+        return res.redirect('/register');
+      }
     }
 
     const hashedPassword = bcrypt.hashSync(password, 10);
