@@ -48,7 +48,7 @@ async function sendEmail(to, subject, html) {
 
   try {
     const info = await transporter.sendMail({
-      from: '"' + SITE_NAME + '" <' + (process.env.SMTP_FROM || 'noreply@dellini.com') + '>',
+      from: '"' + SITE_NAME + '" <' + (process.env.SMTP_FROM || 'noreply@dellini.net') + '>',
       to,
       subject,
       html: fullHtml
@@ -115,6 +115,6 @@ async function sendReplyNotification(email, name, consultId) {
 }
 
 module.exports = { 
-  sendVerificationCode, generateCode, sendPasswordReset, 
+  sendEmail, sendVerificationCode, generateCode, sendPasswordReset, 
   sendNewConsultationNotification, sendReplyNotification, sendWelcomeEmail 
 };

@@ -75,8 +75,21 @@ router.get('/contact', (req, res) => {
 router.post('/contact', (req, res) => {
   const { name, email, phone, subject, message } = req.body;
   
-  // TODO: Save to DB or send email
-  // For now just flash success
+  // Send notification to admin support email
+  try {
+    const { sendEmail } = require('../utils/email');
+    const content = '<p style="color:#555;line-height:1.8;">تم استلام رسالة جديدة من نموذج التواصل:</p>'
+      + '<div style="background:#f8f9fa;border-radius:8px;padding:15px;margin:10px 0;">'
+      + '<p><strong>الاسم:</strong> ' + (name || '—') + '</p>'
+      + '<p><strong>البريد:</strong> ' + (email || '—') + '</p>'
+      + '<p><strong>الجوال:</strong> ' + (phone || '—') + '</p>'
+      + '<p><strong>الموضوع:</strong> ' + (subject || '—') + '</p>'
+      + '<hr>'
+      + '<p style="white-space:pre-wrap">' + (message || '') + '</p>'
+      + '</div>';
+    sendEmail(process.env.CONTACT_EMAIL || 'info@dellini.net', '📩 رسالة جديدة من ' + (name || 'زائر'), content).catch(() => {});
+  } catch(e) {}
+  
   req.session.success_msg = 'تم استلام رسالتك شكراً لتواصلك — سنرد عليك في أقرب وقت';
   res.redirect('/contact');
 });
